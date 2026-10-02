@@ -1,0 +1,78 @@
+---
+import { profile } from '../data/profile';
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="About" description={`${profile.name}. ${profile.role}`}>
+	<section class="tile tile--center">
+		<div class="container">
+			<h1 class="hero-display">{profile.name}</h1>
+			<p class="lead">{profile.affiliation}</p>
+			<p class="intro">{profile.intro.join(' ')}</p>
+		</div>
+	</section>
+
+	<section class="tile tile--parchment">
+		<div class="container">
+			<div class="tile-head">
+				<h2 class="display-lg">Research interests</h2>
+			</div>
+			<ul class="card-grid">
+				{
+					profile.interests.map((interest) => (
+						<li>
+							<div class="card">
+								<h3 class="tagline">{interest.name}</h3>
+								<p class="description">{interest.description}</p>
+							</div>
+						</li>
+					))
+				}
+			</ul>
+		</div>
+	</section>
+
+	<section class="tile tile--center">
+		<div class="container">
+			<div class="tile-head">
+				<h2 class="display-lg">Education</h2>
+			</div>
+			<ul class="education">
+				{
+					profile.education.map((entry) => (
+						<li>
+							<h3 class="tagline">{entry.degree}</h3>
+							<p class="school">{entry.school}</p>
+							<p class="note caption">{entry.note}</p>
+						</li>
+					))
+				}
+			</ul>
+		</div>
+	</section>
+
+	<section class="tile tile--dark tile--center">
+		<div class="container">
+			<div class="tile-head">
+				<h2 class="display-lg">{profile.publications.length === 1 ? 'Publication' : 'Publications'}</h2>
+			</div>
+			<ul class="publications">
+				{
+					profile.publications.map((publication) => (
+						<li>
+							<h3 class="tagline">{publication.title}</h3>
+							<p class="byline caption">
+								{publication.authors} · {publication.venue}
+							</p>
+							<div class="cta-row">
+								<a class="pill" href={publication.url}>
+									Read the paper
+								</a>
+							</div>
+						</li>
+					))
+				}
+			</ul>
+		</div>
+	</section>
+</Base>

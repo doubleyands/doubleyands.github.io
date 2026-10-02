@@ -71,12 +71,18 @@ body {
 	font-weight: 400;
 	line-height: 1.47;
 	letter-spacing: -0.022em;
-	word-break: keep-all;
 	overflow-wrap: break-word;
 	-webkit-font-smoothing: antialiased;
 }
 
 main {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+/* On a tall screen the last tile grows, so no blank band shows above the footer */
+main > .tile:last-child {
 	flex: 1;
 }
 
@@ -308,7 +314,7 @@ a {
 	color: var(--on-dark);
 }
 
-.tile--dark a:not(.chip) {
+.tile--dark a:not(.chip):not(.pill) {
 	color: var(--primary-on-dark);
 }
 
@@ -322,6 +328,17 @@ a {
 
 .tile--dark .lead {
 	color: var(--muted-on-dark);
+}
+
+.tile .interests {
+	margin-top: var(--sp-md);
+	color: var(--ink-48);
+}
+
+.tile .intro {
+	max-width: var(--measure);
+	margin: var(--sp-lg) auto 0;
+	color: var(--ink-80);
 }
 
 .tile-head {
@@ -400,6 +417,57 @@ a {
 	color: var(--primary);
 }
 
+/* Education */
+
+.education {
+	max-width: var(--measure);
+	margin: 0 auto;
+	padding: 0;
+	list-style: none;
+}
+
+.education li + li {
+	margin-top: var(--sp-xl);
+	padding-top: var(--sp-xl);
+	border-top: 1px solid var(--hairline);
+}
+
+.education .tagline {
+	text-wrap: balance;
+}
+
+.education .school {
+	margin-top: var(--sp-xs);
+	color: var(--ink-80);
+}
+
+.education .note {
+	margin-top: 4px;
+	color: var(--ink-48);
+}
+
+/* Publications */
+
+.publications {
+	max-width: var(--measure);
+	margin: 0 auto;
+	padding: 0;
+	list-style: none;
+}
+
+.publications li + li {
+	margin-top: var(--sp-xxl);
+}
+
+.publications .tagline {
+	text-wrap: balance;
+}
+
+.publications .byline {
+	margin-top: var(--sp-sm);
+	color: var(--muted-on-dark);
+}
+
 /* Chips */
 
 .chip-row {
@@ -463,8 +531,6 @@ a {
 	max-width: calc(var(--measure) + var(--gutter) * 2);
 	margin: 0 auto;
 	padding: 0 var(--gutter) var(--sp-section);
-	/* Korean long-form reads better with a little more leading than 1.47 */
-	line-height: 1.65;
 }
 
 .prose > * + * {

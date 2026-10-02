@@ -11,11 +11,12 @@ interface Props {
 const { title, description = SITE_DESCRIPTION } = Astro.props;
 const pageTitle = title ? `${title} · ${SITE_TITLE}` : SITE_TITLE;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
-const inProjects = Astro.url.pathname.startsWith('/projects');
+const path = Astro.url.pathname;
+const current = (prefix: string) => (path.startsWith(prefix) ? 'page' : undefined);
 ---
 
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -46,8 +47,8 @@ const inProjects = Astro.url.pathname.startsWith('/projects');
 			<div class="container">
 				<a class="brand" href="/">{SITE_TITLE}</a>
 				<nav>
-					<a href="/" aria-current={inProjects ? undefined : 'page'}>글</a>
-					<a href="/projects/" aria-current={inProjects ? 'page' : undefined}>프로젝트</a>
+					<a href="/projects/" aria-current={current('/projects')}>Projects</a>
+					<a href="/about/" aria-current={current('/about')}>About</a>
 					<a href={GITHUB_URL}>GitHub</a>
 				</nav>
 			</div>

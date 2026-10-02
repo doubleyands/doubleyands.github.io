@@ -29,3 +29,8 @@ const seoulDate = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' });
 export function isoDate(date: Date) {
 	return seoulDate.format(date);
 }
+
+// 1 post, 2 posts
+export function postCount(count: number) {
+	return `${count} ${count === 1 ? 'post' : 'posts'}`;
+}
