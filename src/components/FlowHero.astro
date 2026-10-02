@@ -1,0 +1,151 @@
+---
+import flow from '../data/flow.json';
+import { profile } from '../data/profile';
+
+const lastFrame = String(flow.frames - 1).padStart(3, '0');
+---
+
+<section
+	class="flow-hero"
+	data-times={JSON.stringify(flow.times)}
+	data-width={flow.width}
+	data-height={flow.height}
+>
+	<div class="flow-hero__pin">
+		<div class="container flow-hero__text">
+			<h1 class="hero-display">{profile.name}</h1>
+			<p class="lead">{profile.role}</p>
+			<p class="interests caption">
+				{profile.interests.map((interest) => interest.name).join(' · ')}
+			</p>
+			<div class="cta-row">
+				<a class="pill" href="/about/">About me</a>
+				<a class="pill pill--ghost" href="/projects/">Projects</a>
+			</div>
+		</div>
+		<figure class="flow-hero__stage">
+			<canvas width={flow.width} height={flow.height} aria-hidden="true"></canvas>
+			<noscript><img src={`/flow/lg/${lastFrame}.webp`} alt="" /></noscript>
+			<figcaption class="container">
+				<span>
+					Flow past a cylinder at Re = 100, the DFG 2D-2 benchmark setup. Vorticity from a
+					lattice Boltzmann simulation. <span class="hint">Scroll to advance time.</span>
+				</span>
+				<span class="clock">t = <output>0.00</output> s</span>
+			</figcaption>
+		</figure>
+	</div>
+</section>
+
+<script>
+	const root = document.querySelector<HTMLElement>('.flow-hero');
+	const canvas = root?.querySelector('canvas');
+	const context = canvas?.getContext('2d');
+	const clock = root?.querySelector('output');
+
+	if (root && canvas && context && clock) {
+		const times: number[] = JSON.parse(root.dataset.times ?? '[]');
+		const count = times.length;
+		const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+		const saveData = (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
+
+		const resize = () => {
+			const ratio = Math.min(devicePixelRatio, 2);
+			canvas.width = Math.round(canvas.clientWidth * ratio);
+			canvas.height = Math.round(canvas.clientHeight * ratio);
+		};
+		resize();
+
+		// The small frames are enough only where they are not enlarged much.
+		// A phone crops the picture, which enlarges it, so it gets the large ones.
+		const enlargement = Math.max(
+			canvas.width / Number(root.dataset.width),
+			canvas.height / Number(root.dataset.height),
+		);
+		const folder = `/flow/${saveData || enlargement <= 1.15 ? 'sm' : 'lg'}/`;
+
+		const images: (HTMLImageElement | undefined)[] = new Array(count);
+		let wanted = still ? count - 1 : 0;
+		let shown = -1;
+
+		// The loaded frame closest to the one the scroll position asks for
+		const nearest = (index: number) => {
+			for (let distance = 0; distance < count; distance++) {
+				if (images[index - distance]) return index - distance;
+				if (images[index + distance]) return index + distance;
+			}
+			return -1;
+		};
+
+		const draw = () => {
+			const index = nearest(wanted);
+			if (index < 0 || index === shown) return;
+			const image = images[index]!;
+			// Cover the canvas and keep the left edge, where the cylinder is
+			const scale = Math.max(canvas.width / image.naturalWidth, canvas.height / image.naturalHeight);
+			const width = canvas.width / scale;
+			const height = canvas.height / scale;
+			context.drawImage(
+				image,
+				0,
+				(image.naturalHeight - height) / 2,
+				width,
+				height,
+				0,
+				0,
+				canvas.width,
+				canvas.height,
+			);
+			shown = index;
+			clock.textContent = times[index].toFixed(2);
+		};
+
+		const load = (index: number) =>
+			new Promise<void>((resolve) => {
+				const image = new Image();
+				image.onload = () => {
+					images[index] = image;
+					if (nearest(wanted) === index) draw();
+					resolve();
+				};
+				image.onerror = () => resolve();
+				image.src = `${folder}${String(index).padStart(3, '0')}.webp`;
+			});
+
+		let ticking = false;
+		const onScroll = () => {
+			if (ticking) return;
+			ticking = true;
+			requestAnimationFrame(() => {
+				ticking = false;
+				const span = root.offsetHeight - innerHeight;
+				const progress = Math.min(Math.max((scrollY - root.offsetTop) / span, 0), 1);
+				wanted = Math.round(progress * (count - 1));
+				draw();
+			});
+		};
+
+		addEventListener('resize', () => {
+			resize();
+			shown = -1;
+			draw();
+		});
+
+		if (still) {
+			load(wanted);
+		} else {
+			addEventListener('scroll', onScroll, { passive: true });
+			onScroll();
+			// The frame in view first, then the rest in order, a few at a time
+			load(wanted).then(async () => {
+				const queue = times.map((_, index) => index).filter((index) => index !== wanted);
+				const worker = async () => {
+					for (let index = queue.shift(); index !== undefined; index = queue.shift()) {
+						await load(index);
+					}
+				};
+				await Promise.all(Array.from({ length: 6 }, worker));
+			});
+		}
+	}
+</script>
