@@ -1,15 +1,15 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getPosts, getProjects, isoDate } from '../../lib/posts';
+import { getPosts, getProjects, isoDate, postCount } from '../../lib/posts';
 
 const projects = getProjects(await getPosts());
 ---
 
-<Base title="프로젝트" description="프로젝트별 실험 기록">
+<Base title="Projects" description="Experiment notes grouped by project.">
 	<section class="tile tile--center">
 		<div class="container">
-			<h1 class="hero-display">프로젝트</h1>
-			<p class="lead">프로젝트별로 모아 볼 수 있습니다.</p>
+			<h1 class="hero-display">Projects</h1>
+			<p class="lead">Experiment notes grouped by project.</p>
 		</div>
 	</section>
 
@@ -18,7 +18,7 @@ const projects = getProjects(await getPosts());
 			{
 				projects.length === 0 ? (
 					<div class="empty">
-						<h2 class="tagline">아직 공개된 프로젝트가 없습니다.</h2>
+						<h2 class="tagline">No public projects yet.</h2>
 					</div>
 				) : (
 					<ul class="card-grid">
@@ -26,10 +26,10 @@ const projects = getProjects(await getPosts());
 							<li>
 								<a class="card" href={`/projects/${project.name}/`}>
 									<h2 class="tagline">{project.name}</h2>
-									<p class="description">글 {project.count}개</p>
+									<p class="description">{postCount(project.count)}</p>
 									<p class="foot caption">
-										<time datetime={isoDate(project.latest)}>최근 {isoDate(project.latest)}</time>
-										<span class="more">보기 &rsaquo;</span>
+										<time datetime={isoDate(project.latest)}>Latest {isoDate(project.latest)}</time>
+										<span class="more">View &rsaquo;</span>
 									</p>
 								</a>
 							</li>

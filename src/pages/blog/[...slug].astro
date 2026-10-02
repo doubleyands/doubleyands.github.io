@@ -31,8 +31,8 @@ const { Content } = await render(post);
 
 <Base title={title} description={description}>
 	<SubNav name={project} href={projectHref}>
-		<a href="/">글 목록</a>
-		<a class="pill pill--sm" href={projectHref}>프로젝트 글 보기</a>
+		<a href="/">All posts</a>
+		<a class="pill pill--sm" href={projectHref}>View project</a>
 	</SubNav>
 
 	<article>
@@ -42,7 +42,7 @@ const { Content } = await render(post);
 			</p>
 			<h1 class="display-lg">{title}</h1>
 			<p class="description">{description}</p>
-			{updatedDate && <p class="updated caption">{isoDate(updatedDate)} 수정</p>}
+			{updatedDate && <p class="updated caption">Updated {isoDate(updatedDate)}</p>}
 		</header>
 		<div class="prose">
 			<Content />
@@ -64,7 +64,7 @@ const { Content } = await render(post);
 				<div class="container">
 					<div class="tile-head">
 						<p class="eyebrow caption-strong">{project}</p>
-						<h2 class="display-lg">이 프로젝트의 다른 글</h2>
+						<h2 class="display-lg">More from this project</h2>
 					</div>
 					<PostCards posts={others} showProject={false} />
 				</div>

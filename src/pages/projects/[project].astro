@@ -2,7 +2,7 @@
 import PostCards from '../../components/PostCards.astro';
 import SubNav from '../../components/SubNav.astro';
 import Base from '../../layouts/Base.astro';
-import { getPosts, getProjects } from '../../lib/posts';
+import { getPosts, getProjects, postCount } from '../../lib/posts';
 
 export async function getStaticPaths() {
 	const posts = await getPosts();
@@ -16,15 +16,15 @@ const { project } = Astro.params;
 const { posts } = Astro.props;
 ---
 
-<Base title={project} description={`${project} 프로젝트의 실험 기록`}>
+<Base title={project} description={`Experiment notes from the ${project} project.`}>
 	<SubNav name={project}>
-		<a href="/projects/">프로젝트 전체</a>
+		<a href="/projects/">All projects</a>
 	</SubNav>
 
 	<section class="tile tile--center">
 		<div class="container">
 			<h1 class="hero-display">{project}</h1>
-			<p class="lead">글 {posts.length}개</p>
+			<p class="lead">{postCount(posts.length)}</p>
 		</div>
 	</section>
 
