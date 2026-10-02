@@ -370,6 +370,102 @@ a {
 	}
 }
 
+/* Flow hero: the page stays pinned while scrolling plays the simulation */
+
+.flow-hero {
+	height: 360vh;
+	background: var(--black);
+	color: var(--on-dark);
+}
+
+.flow-hero__pin {
+	position: sticky;
+	top: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: var(--sp-xxl);
+	height: 100vh;
+	height: 100svh;
+	overflow: hidden;
+}
+
+.flow-hero__text {
+	text-align: center;
+}
+
+.flow-hero .lead {
+	margin-top: var(--sp-sm);
+	color: var(--muted-on-dark);
+}
+
+.flow-hero .interests {
+	margin-top: var(--sp-md);
+	color: var(--muted-on-dark);
+}
+
+.flow-hero .pill--ghost {
+	border-color: var(--primary-on-dark);
+	color: var(--primary-on-dark);
+}
+
+.flow-hero__stage {
+	margin: 0;
+}
+
+/* The top and bottom edges of the picture are the channel walls */
+.flow-hero canvas,
+.flow-hero noscript img {
+	display: block;
+	width: 100%;
+	min-height: 220px;
+	aspect-ratio: 880 / 164;
+	border-top: 1px solid rgba(255, 255, 255, 0.14);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+	object-fit: cover;
+	object-position: left center;
+}
+
+.flow-hero figcaption {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--sp-lg);
+	margin-top: var(--sp-sm);
+	color: var(--muted-on-dark);
+	font-size: 12px;
+	line-height: 1.34;
+	letter-spacing: -0.12px;
+}
+
+.flow-hero .clock {
+	flex: none;
+	font-variant-numeric: tabular-nums;
+}
+
+@media (max-height: 700px), (max-width: 640px) {
+	.flow-hero__pin {
+		gap: var(--sp-xl);
+	}
+}
+
+/* No pinning and a single still picture for people who ask for less motion */
+@media (prefers-reduced-motion: reduce) {
+	.flow-hero {
+		height: auto;
+	}
+
+	.flow-hero__pin {
+		position: static;
+		height: auto;
+		padding: var(--sp-section) 0 var(--sp-xxl);
+	}
+
+	.flow-hero .hint {
+		display: none;
+	}
+}
+
 /* Utility cards */
 
 .card-grid {

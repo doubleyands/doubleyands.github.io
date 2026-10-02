@@ -1,6 +1,6 @@
 ---
+import FlowHero from '../components/FlowHero.astro';
 import PostCards from '../components/PostCards.astro';
-import { profile } from '../data/profile';
 import Base from '../layouts/Base.astro';
 import { getPosts, getProjects, postCount } from '../lib/posts';
 
@@ -9,19 +9,7 @@ const projects = getProjects(posts);
 ---
 
 <Base>
-	<section class="tile tile--center">
-		<div class="container">
-			<h1 class="hero-display">{profile.name}</h1>
-			<p class="lead">{profile.role}</p>
-			<p class="interests caption">
-				{profile.interests.map((interest) => interest.name).join(' · ')}
-			</p>
-			<div class="cta-row">
-				<a class="pill" href="/about/">About me</a>
-				<a class="pill pill--ghost" href="/projects/">Projects</a>
-			</div>
-		</div>
-	</section>
+	<FlowHero />
 
 	<section class="tile tile--parchment">
 		<div class="container">
