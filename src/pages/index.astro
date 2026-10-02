@@ -1,0 +1,65 @@
+---
+import PostCards from '../components/PostCards.astro';
+import { SITE_DESCRIPTION, SITE_TAGLINE } from '../consts';
+import Base from '../layouts/Base.astro';
+import { getPosts, getProjects } from '../lib/posts';
+
+const posts = await getPosts();
+const projects = getProjects(posts);
+---
+
+<Base>
+	<section class="tile tile--center">
+		<div class="container">
+			<h1 class="hero-display">{SITE_TAGLINE}</h1>
+			<p class="lead">{SITE_DESCRIPTION}</p>
+			<div class="cta-row">
+				<a class="pill" href="/projects/">프로젝트 보기</a>
+				<a class="pill pill--ghost" href="/rss.xml">RSS 구독</a>
+			</div>
+		</div>
+	</section>
+
+	<section class="tile tile--parchment">
+		<div class="container">
+			{
+				posts.length === 0 ? (
+					<div class="empty">
+						<h2 class="tagline">아직 올라온 글이 없습니다.</h2>
+						<p>실험을 기록하는 대로 이곳에 올라옵니다.</p>
+					</div>
+				) : (
+					<>
+						<div class="tile-head">
+							<h2 class="display-lg">최근 글</h2>
+						</div>
+						<PostCards posts={posts} />
+					</>
+				)
+			}
+		</div>
+	</section>
+
+	{
+		projects.length > 0 && (
+			<section class="tile tile--dark tile--center">
+				<div class="container">
+					<div class="tile-head">
+						<h2 class="display-lg">프로젝트</h2>
+						<p class="lead">프로젝트별로 모아 볼 수 있습니다.</p>
+					</div>
+					<ul class="chip-row">
+						{projects.map((project) => (
+							<li>
+								<a class="chip" href={`/projects/${project.name}/`}>
+									<span class="caption-strong">{project.name}</span>
+									<span class="count caption">글 {project.count}개</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				</div>
+			</section>
+		)
+	}
+</Base>

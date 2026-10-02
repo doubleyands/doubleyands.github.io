@@ -1,0 +1,29 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { isoDate } from '../lib/posts';
+
+interface Props {
+	posts: CollectionEntry<'blog'>[];
+	showProject?: boolean;
+}
+
+const { posts, showProject = true } = Astro.props;
+---
+
+<ul class="card-grid">
+	{
+		posts.map((post) => (
+			<li>
+				<a class="card" href={`/blog/${post.id}/`}>
+					{showProject && <span class="project caption-strong">{post.data.project}</span>}
+					<h3 class="tagline">{post.data.title}</h3>
+					<p class="description">{post.data.description}</p>
+					<p class="foot caption">
+						<time datetime={isoDate(post.data.pubDate)}>{isoDate(post.data.pubDate)}</time>
+						<span class="more">읽기 &rsaquo;</span>
+					</p>
+				</a>
+			</li>
+		))
+	}
+</ul>

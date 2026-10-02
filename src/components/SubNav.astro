@@ -1,0 +1,25 @@
+---
+interface Props {
+	name: string;
+	href?: string;
+}
+
+const { name, href } = Astro.props;
+---
+
+<div class="sub-nav" slot="subnav">
+	<div class="container">
+		{
+			href ? (
+				<a class="name tagline" href={href}>
+					{name}
+				</a>
+			) : (
+				<span class="name tagline">{name}</span>
+			)
+		}
+		<div class="actions">
+			<slot />
+		</div>
+	</div>
+</div>

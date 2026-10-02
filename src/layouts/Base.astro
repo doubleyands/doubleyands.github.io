@@ -1,0 +1,69 @@
+---
+import '../styles/global.css';
+import 'katex/dist/katex.min.css';
+import { GITHUB_URL, SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const { title, description = SITE_DESCRIPTION } = Astro.props;
+const pageTitle = title ? `${title} · ${SITE_TITLE}` : SITE_TITLE;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const inProjects = Astro.url.pathname.startsWith('/projects');
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="sitemap" href="/sitemap-index.xml" />
+		<link
+			rel="alternate"
+			type="application/rss+xml"
+			title={SITE_TITLE}
+			href={new URL('rss.xml', Astro.site)}
+		/>
+		<link rel="canonical" href={canonicalURL} />
+		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+		/>
+		<title>{pageTitle}</title>
+		<meta name="description" content={description} />
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={canonicalURL} />
+		<meta property="og:title" content={pageTitle} />
+		<meta property="og:description" content={description} />
+		<meta name="generator" content={Astro.generator} />
+	</head>
+	<body>
+		<header class="global-nav">
+			<div class="container">
+				<a class="brand" href="/">{SITE_TITLE}</a>
+				<nav>
+					<a href="/" aria-current={inProjects ? undefined : 'page'}>글</a>
+					<a href="/projects/" aria-current={inProjects ? 'page' : undefined}>프로젝트</a>
+					<a href={GITHUB_URL}>GitHub</a>
+				</nav>
+			</div>
+		</header>
+		<slot name="subnav" />
+		<main>
+			<slot />
+		</main>
+		<footer class="site-footer">
+			<div class="container">
+				<span>&copy; {new Date().getFullYear()} {SITE_TITLE}</span>
+				<span class="links">
+					<a href="/rss.xml">RSS</a>
+					<a href={GITHUB_URL}>GitHub</a>
+				</span>
+			</div>
+		</footer>
+	</body>
+</html>
