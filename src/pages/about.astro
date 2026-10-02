@@ -42,8 +42,10 @@ import Base from '../layouts/Base.astro';
 					profile.education.map((entry) => (
 						<li>
 							<h3 class="tagline">{entry.degree}</h3>
-							<p class="school">{entry.school}</p>
-							<p class="note caption">{entry.note}</p>
+							<p class="school">
+								{entry.school} · {entry.period}
+							</p>
+							{entry.note && <p class="note caption">{entry.note}</p>}
 						</li>
 					))
 				}

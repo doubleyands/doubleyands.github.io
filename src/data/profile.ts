@@ -24,11 +24,13 @@ export const profile = {
 		{
 			degree: 'M.S. student in Computational Science and Engineering',
 			school: 'Yonsei University',
-			note: 'Current',
+			period: '2026 – present',
+			note: '',
 		},
 		{
 			degree: 'B.Eng. in Data Science and B.S. in Mathematics',
 			school: 'The Catholic University of Korea',
+			period: '2022 – 2026',
 			note: 'Primary major in Data Science, double major in Mathematics',
 		},
 	],
