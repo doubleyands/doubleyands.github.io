@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getPosts, getProjects, isoDate } from '../../lib/posts';
+
+const projects = getProjects(await getPosts());
+---
+
+<Base title="프로젝트" description="프로젝트별 실험 기록">
+	<section class="tile tile--center">
+		<div class="container">
+			<h1 class="hero-display">프로젝트</h1>
+			<p class="lead">프로젝트별로 모아 볼 수 있습니다.</p>
+		</div>
+	</section>
+
+	<section class="tile tile--parchment">
+		<div class="container">
+			{
+				projects.length === 0 ? (
+					<div class="empty">
+						<h2 class="tagline">아직 공개된 프로젝트가 없습니다.</h2>
+					</div>
+				) : (
+					<ul class="card-grid">
+						{projects.map((project) => (
+							<li>
+								<a class="card" href={`/projects/${project.name}/`}>
+									<h2 class="tagline">{project.name}</h2>
+									<p class="description">글 {project.count}개</p>
+									<p class="foot caption">
+										<time datetime={isoDate(project.latest)}>최근 {isoDate(project.latest)}</time>
+										<span class="more">보기 &rsaquo;</span>
+									</p>
+								</a>
+							</li>
+						))}
+					</ul>
+				)
+			}
+		</div>
+	</section>
+</Base>

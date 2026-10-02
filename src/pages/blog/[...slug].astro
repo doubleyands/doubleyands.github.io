@@ -1,0 +1,74 @@
+---
+import { type CollectionEntry, render } from 'astro:content';
+import PostCards from '../../components/PostCards.astro';
+import SubNav from '../../components/SubNav.astro';
+import Base from '../../layouts/Base.astro';
+import { getPosts, isoDate } from '../../lib/posts';
+
+export async function getStaticPaths() {
+	const posts = await getPosts();
+	return posts.map((post) => ({
+		params: { slug: post.id },
+		props: {
+			post,
+			others: posts
+				.filter((other) => other.data.project === post.data.project && other.id !== post.id)
+				.slice(0, 3),
+		},
+	}));
+}
+
+interface Props {
+	post: CollectionEntry<'blog'>;
+	others: CollectionEntry<'blog'>[];
+}
+
+const { post, others } = Astro.props;
+const { title, description, pubDate, updatedDate, project, tags } = post.data;
+const projectHref = `/projects/${project}/`;
+const { Content } = await render(post);
+---
+
+<Base title={title} description={description}>
+	<SubNav name={project} href={projectHref}>
+		<a href="/">글 목록</a>
+		<a class="pill pill--sm" href={projectHref}>프로젝트 글 보기</a>
+	</SubNav>
+
+	<article>
+		<header class="post-header">
+			<p class="meta caption">
+				<time datetime={isoDate(pubDate)}>{isoDate(pubDate)}</time>
+			</p>
+			<h1 class="display-lg">{title}</h1>
+			<p class="description">{description}</p>
+			{updatedDate && <p class="updated caption">{isoDate(updatedDate)} 수정</p>}
+		</header>
+		<div class="prose">
+			<Content />
+		</div>
+		{
+			tags.length > 0 && (
+				<p class="tags caption">
+					{tags.map((tag) => (
+						<span>#{tag}</span>
+					))}
+				</p>
+			)
+		}
+	</article>
+
+	{
+		others.length > 0 && (
+			<section class="tile tile--parchment">
+				<div class="container">
+					<div class="tile-head">
+						<p class="eyebrow caption-strong">{project}</p>
+						<h2 class="display-lg">이 프로젝트의 다른 글</h2>
+					</div>
+					<PostCards posts={others} showProject={false} />
+				</div>
+			</section>
+		)
+	}
+</Base>
