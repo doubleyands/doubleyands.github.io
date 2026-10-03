@@ -373,7 +373,7 @@ a {
 /* Flow hero: the page stays pinned while scrolling plays the simulation */
 
 .flow-hero {
-	height: 360vh;
+	height: 200vh;
 	background: var(--black);
 	color: var(--on-dark);
 }
