@@ -8,15 +8,15 @@ export const profile = {
 	],
 	interests: [
 		{
-			name: 'Physics-informed neural networks',
+			name: 'Physics-Informed Neural Networks (PINNs)',
 			description: 'Neural networks trained to satisfy the governing equations of a physical system.',
 		},
 		{
-			name: 'Neural operators',
+			name: 'Neural Operators',
 			description: 'Models that learn maps between function spaces, such as from the inputs of a PDE to its solution.',
 		},
 		{
-			name: 'Numerical analysis',
+			name: 'Numerical Analysis',
 			description: 'The design and analysis of algorithms that solve mathematical problems numerically.',
 		},
 	],
