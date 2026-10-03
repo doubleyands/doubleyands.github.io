@@ -9,8 +9,10 @@
 // rest over RAMP seconds, so the start-up can be shown. After the ramp the
 // setup is the benchmark's.
 //
-// Usage: node scripts/flow/simulate.mjs [--t=10] [--snap=0.02] [--out=scripts/flow/out]
-// Writes velocity snapshots (Float32 u then v, row-major) and forces.csv.
+// Usage: node scripts/flow/simulate.mjs [--t=10] [--fps=60 | --snap=0.02] [--until=6]
+//          [--out=scripts/flow/out]
+// Writes velocity snapshots (Float32 u then v, row-major) up to --until seconds,
+// and forces.csv for the whole run.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,7 +21,8 @@ const args = Object.fromEntries(
 	process.argv.slice(2).map((arg) => arg.replace(/^--/, '').split('=')),
 );
 const T_END = Number(args.t ?? 10);
-const SNAP_DT = Number(args.snap ?? 0.02);
+const SNAP_DT = args.fps ? 1 / Number(args.fps) : Number(args.snap ?? 0.02);
+const SNAP_UNTIL = Number(args.until ?? T_END);
 const OUT = args.out ?? 'scripts/flow/out';
 
 // Physical setup (SI units, as in the benchmark)
@@ -39,11 +42,13 @@ const NX = Math.round(L / DX);
 const NY = Math.round(H / DX);
 const N = NX * NY;
 const D_LAT = D / DX;
-const U_MEAN_LAT = 0.05;
+// Lattice velocity near 0.05, adjusted so one snapshot interval is a whole number of steps
+const STEPS_PER_SNAP = Math.round(SNAP_DT / ((DX * 0.05) / U_MEAN));
+const DT = SNAP_DT / STEPS_PER_SNAP;
+const U_MEAN_LAT = (DT * U_MEAN) / DX;
 const U_MAX_LAT = 1.5 * U_MEAN_LAT;
 const NU_LAT = (U_MEAN_LAT * D_LAT) / RE;
 const TAU = 3 * NU_LAT + 0.5;
-const DT = (DX * U_MEAN_LAT) / U_MEAN;
 
 // TRT relaxation rates, magic parameter 3/16
 const W_PLUS = 1 / TAU;
@@ -201,7 +206,7 @@ function velocity() {
 
 fs.mkdirSync(OUT, { recursive: true });
 const steps = Math.round(T_END / DT);
-const snapEvery = Math.round(SNAP_DT / DT);
+const snapEvery = STEPS_PER_SNAP;
 const forceEvery = 20;
 const forces = ['t,cd,cl'];
 const coeff = 2 / (U_MEAN_LAT * U_MEAN_LAT * D_LAT);
@@ -209,14 +214,21 @@ let snapshots = 0;
 
 fs.writeFileSync(
 	path.join(OUT, 'meta.json'),
-	JSON.stringify({ nx: NX, ny: NY, dx: DX, dt: DT, snapDt: snapEvery * DT, tau: TAU, re: RE, ramp: RAMP }, null, 2),
+	JSON.stringify(
+		{ nx: NX, ny: NY, dx: DX, dt: DT, snapDt: SNAP_DT, uMeanLattice: U_MEAN_LAT, tau: TAU, re: RE, ramp: RAMP },
+		null,
+		2,
+	),
 );
-console.log(`grid ${NX}x${NY}, tau ${TAU.toFixed(3)}, dt ${DT} s, ${steps} steps`);
+console.log(
+	`grid ${NX}x${NY}, lattice velocity ${U_MEAN_LAT.toFixed(5)}, tau ${TAU.toFixed(4)}, ` +
+		`dt ${DT.toExponential(4)} s, ${steps} steps, snapshot every ${snapEvery} steps`,
+);
 
 const started = Date.now();
 for (let n = 0; n <= steps; n++) {
 	const time = n * DT;
-	if (n % snapEvery === 0) {
+	if (n % snapEvery === 0 && time <= SNAP_UNTIL + DT / 2) {
 		const name = `uv_${String(snapshots).padStart(4, '0')}.f32`;
 		fs.writeFileSync(path.join(OUT, name), Buffer.from(velocity().buffer));
 		snapshots++;
