@@ -44,7 +44,7 @@ tags: [태그1, 태그2]
 ```
 node scripts/flow/simulate.mjs --fps=60 --until=6    # 격자 볼츠만 계산, 약 14분. 1/60초마다 저장, scripts/flow/out/ (커밋하지 않음)
 node scripts/flow/validate.mjs    # 항력·양력 계수와 Strouhal 수를 벤치마크 기준값과 비교
-node scripts/flow/render.mjs --from=0 --to=6 --frames=361    # public/flow/ 에 프레임, src/data/flow.json 에 프레임별 시간
+node scripts/flow/render.mjs --from=0 --to=4.5 --frames=271    # public/flow/ 에 프레임, src/data/flow.json 에 프레임별 시간
 ```
 
 벤치마크 기준값과의 비교 (t ≥ 8 s, 격자 880 × 164):
