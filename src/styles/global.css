@@ -724,6 +724,12 @@ a {
 	word-break: normal;
 }
 
+/* Show code exactly as typed: no "<=" turning into "≤" */
+.prose code {
+	font-variant-ligatures: none;
+	font-feature-settings: 'liga' 0, 'calt' 0;
+}
+
 .prose table {
 	display: block;
 	width: max-content;
@@ -756,6 +762,170 @@ a {
 	padding: var(--sp-xs) 0;
 	overflow-x: auto;
 	overflow-y: hidden;
+}
+
+/* Charts inside posts */
+
+.prose .viz {
+	margin: var(--sp-xl) 0;
+}
+
+.viz-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--sp-xs) var(--sp-md);
+	margin-bottom: var(--sp-xs);
+	color: var(--ink-80);
+	font-size: 14px;
+	letter-spacing: -0.224px;
+}
+
+.viz-key {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.viz-swatch {
+	display: inline-block;
+	flex: none;
+	width: 16px;
+	height: 2px;
+	border-radius: 1px;
+}
+
+.viz-frame {
+	position: relative;
+}
+
+.viz-plot {
+	display: block;
+	width: 100%;
+	height: auto;
+	overflow: visible;
+	font-family: var(--font);
+}
+
+.viz-plot:focus-visible {
+	outline: 2px solid var(--primary-focus);
+	outline-offset: 4px;
+	border-radius: var(--r-xs);
+}
+
+.viz-grid {
+	stroke: #e8e8ed;
+	stroke-width: 1;
+}
+
+.viz-crosshair {
+	stroke: #c7c7cc;
+	stroke-width: 1;
+}
+
+.viz-leader {
+	stroke: #c7c7cc;
+	stroke-width: 1;
+}
+
+.viz-tick {
+	fill: var(--ink-48);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+}
+
+.viz-axis-title {
+	fill: var(--ink-48);
+	font-size: 12px;
+}
+
+.viz-label {
+	fill: var(--ink-80);
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.viz-tooltip {
+	position: absolute;
+	z-index: 2;
+	display: grid;
+	gap: 4px;
+	min-width: 170px;
+	padding: var(--sp-sm);
+	border: 1px solid var(--hairline-soft);
+	border-radius: var(--r-sm);
+	background: var(--canvas);
+	font-size: 12px;
+	letter-spacing: -0.12px;
+	pointer-events: none;
+}
+
+.viz-tooltip[hidden] {
+	display: none;
+}
+
+.viz-tooltip-head {
+	color: var(--ink-48);
+}
+
+.viz-tooltip-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.viz-tooltip-row strong {
+	color: var(--ink);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.viz-tooltip-row span:last-child {
+	color: var(--ink-48);
+}
+
+/* On a phone the chart is drawn at about half size: larger axis text, and the
+   legend alone names the lines */
+@media (max-width: 640px) {
+	.viz-tick,
+	.viz-axis-title {
+		font-size: 20px;
+	}
+
+	.viz-label,
+	.viz-leader {
+		display: none;
+	}
+}
+
+.prose .viz figcaption {
+	margin-top: var(--sp-xs);
+	color: var(--ink-48);
+	font-size: 14px;
+	line-height: 1.43;
+	letter-spacing: -0.224px;
+}
+
+.viz-table {
+	margin-top: var(--sp-sm);
+	font-size: 14px;
+}
+
+.viz-table summary {
+	color: var(--primary);
+	cursor: pointer;
+}
+
+.prose .viz-table table {
+	margin-top: var(--sp-sm);
+	max-height: 360px;
+	overflow: auto;
+	font-size: 13px;
+}
+
+.prose .viz-table th,
+.prose .viz-table td {
+	padding: 4px var(--sp-md) 4px 0;
+	white-space: nowrap;
 }
 
 .tags {
