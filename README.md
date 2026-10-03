@@ -42,9 +42,9 @@ tags: [태그1, 태그2]
 첫 화면은 스크롤하는 동안 고정되고, 스크롤 위치에 따라 원기둥 주위 유동(DFG 2D-2 벤치마크 설정, Re = 100)의 와도가 시간순으로 재생된다. 그림은 이 저장소의 스크립트로 직접 계산한 것이다.
 
 ```
-node scripts/flow/simulate.mjs    # 격자 볼츠만 계산, 약 15분. 결과는 scripts/flow/out/ (커밋하지 않음)
+node scripts/flow/simulate.mjs --fps=60 --until=6    # 격자 볼츠만 계산, 약 14분. 1/60초마다 저장, scripts/flow/out/ (커밋하지 않음)
 node scripts/flow/validate.mjs    # 항력·양력 계수와 Strouhal 수를 벤치마크 기준값과 비교
-node scripts/flow/render.mjs      # public/flow/ 에 프레임, src/data/flow.json 에 프레임별 시간
+node scripts/flow/render.mjs --from=0 --to=6 --frames=361    # public/flow/ 에 프레임, src/data/flow.json 에 프레임별 시간
 ```
 
 벤치마크 기준값과의 비교 (t ≥ 8 s, 격자 880 × 164):
