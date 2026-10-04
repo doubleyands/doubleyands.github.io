@@ -891,11 +891,16 @@ a {
 }
 
 .publications li + li {
-	margin-top: var(--sp-xxl);
+	margin-top: var(--sp-xl);
 }
 
 .publications .tagline {
 	text-wrap: balance;
+}
+
+/* The title is the link to the paper */
+.publications .tagline a:hover {
+	text-decoration: underline;
 }
 
 .profile-link {
