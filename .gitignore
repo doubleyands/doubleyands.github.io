@@ -22,3 +22,4 @@ scripts/flow/out*/
 
 # PINN training checkpoints (large, reproducible with scripts/pinn/burgers.py)
 scripts/pinn/out/
+__pycache__/
