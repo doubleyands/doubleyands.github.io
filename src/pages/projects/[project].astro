@@ -3,6 +3,7 @@ import PostCards from '../../components/PostCards.astro';
 import SubNav from '../../components/SubNav.astro';
 import Base from '../../layouts/Base.astro';
 import { getPosts, getProjects, postCount } from '../../lib/posts';
+import { transitionName } from '../../lib/transitions';
 
 export async function getStaticPaths() {
 	const posts = await getPosts();
@@ -23,7 +24,7 @@ const { posts } = Astro.props;
 
 	<section class="tile tile--center">
 		<div class="container">
-			<h1 class="hero-display">{project}</h1>
+			<h1 class="hero-display" style={transitionName('project', project)}>{project}</h1>
 			<p class="lead">{postCount(posts.length)}</p>
 		</div>
 	</section>

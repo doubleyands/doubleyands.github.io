@@ -3,6 +3,7 @@ import FlowHero from '../components/FlowHero.astro';
 import PostCards from '../components/PostCards.astro';
 import Base from '../layouts/Base.astro';
 import { getPosts, getProjects, postCount } from '../lib/posts';
+import { transitionName } from '../lib/transitions';
 
 const posts = await getPosts();
 const projects = getProjects(posts);
@@ -21,7 +22,7 @@ const projects = getProjects(posts);
 					</div>
 				) : (
 					<>
-						<div class="tile-head">
+						<div class="tile-head reveal">
 							<h2 class="display-lg">Latest posts</h2>
 						</div>
 						<PostCards posts={posts} />
@@ -35,15 +36,17 @@ const projects = getProjects(posts);
 		projects.length > 0 && (
 			<section class="tile tile--dark tile--center">
 				<div class="container">
-					<div class="tile-head">
+					<div class="tile-head reveal">
 						<h2 class="display-lg">Projects</h2>
 						<p class="lead">Browse posts by project.</p>
 					</div>
 					<ul class="chip-row">
 						{projects.map((project) => (
-							<li>
+							<li class="reveal">
 								<a class="chip" href={`/projects/${project.name}/`}>
-									<span class="caption-strong">{project.name}</span>
+									<span class="caption-strong" style={transitionName('project', project.name)}>
+										{project.name}
+									</span>
 									<span class="count caption">{postCount(project.count)}</span>
 								</a>
 							</li>

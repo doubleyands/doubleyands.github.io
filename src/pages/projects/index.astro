@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getPosts, getProjects, isoDate, postCount } from '../../lib/posts';
+import { transitionName } from '../../lib/transitions';
 
 const projects = getProjects(await getPosts());
 ---
@@ -23,9 +24,11 @@ const projects = getProjects(await getPosts());
 				) : (
 					<ul class="card-grid">
 						{projects.map((project) => (
-							<li>
+							<li class="reveal">
 								<a class="card" href={`/projects/${project.name}/`}>
-									<h2 class="tagline">{project.name}</h2>
+									<h2 class="tagline" style={transitionName('project', project.name)}>
+										{project.name}
+									</h2>
 									<p class="description">{postCount(project.count)}</p>
 									<p class="foot caption">
 										<time datetime={isoDate(project.latest)}>Latest {isoDate(project.latest)}</time>
