@@ -1,0 +1,224 @@
+---
+// A PINN learning Burgers' equation. Scrolling plays the training run recorded by
+// scripts/pinn/burgers.py: the prediction at t = 0.75 moves toward the exact solution.
+import fs from 'node:fs';
+
+interface Frame {
+	step: number;
+	loss: number;
+	error: number;
+	u: number[];
+}
+interface Run {
+	t: number;
+	steps: number;
+	x: number[];
+	exact: number[];
+	events: {
+		smoothLearned: number | null;
+		shockOff: { from: number; to: number } | null;
+		shockBack: number | null;
+		underOnePercent: number | null;
+	};
+	frames: Frame[];
+}
+
+const run: Run = JSON.parse(fs.readFileSync('public/pinn/burgers.json', 'utf8'));
+const last = run.frames[run.frames.length - 1];
+const { events } = run;
+
+// One sentence per stage of training. The stages are measured by the export script,
+// and a sentence is left out when its stage did not happen in the run.
+const notes = [
+	{ from: 0, text: 'It starts from a random guess and fits the smooth parts first.' },
+	events.smoothLearned !== null && {
+		from: events.smoothLearned,
+		text: 'Then the shock in the middle gets steeper.',
+	},
+	events.shockOff !== null && {
+		from: events.shockOff.from,
+		text: 'The shock slips to the wrong place. The loss keeps falling, but the error stays high.',
+	},
+	events.shockBack !== null && {
+		from: events.shockBack,
+		text: 'The shock moves back to x = 0, and the error drops.',
+	},
+	events.underOnePercent !== null && {
+		from: events.underOnePercent,
+		text: 'From here on, training only polishes the details.',
+	},
+].filter(Boolean);
+
+// Plot box: x in [-1, 1] -> 0..1000, u in [-LIMIT, LIMIT] -> 100..0
+const LIMIT = 1.2;
+const px = (x: number) => (500 * (x + 1)).toFixed(1);
+const py = (u: number) => (50 - (50 * u) / LIMIT).toFixed(2);
+const line = (u: number[]) => u.map((v, i) => `${i ? 'L' : 'M'}${px(run.x[i])},${py(v)}`).join('');
+const top = (u: number) => `${50 - (50 * u) / LIMIT}%`;
+const percent = (error: number) => `${(100 * error).toFixed(error < 0.1 ? 2 : 1)}%`;
+---
+
+<section
+	class="pinn"
+	data-limit={LIMIT}
+	data-notes={JSON.stringify(notes)}
+	data-under-one-percent={events.underOnePercent ?? ''}
+>
+	<div class="pinn__pin">
+		<div class="container">
+			<div class="pinn__text">
+				<p class="eyebrow caption-strong">Physics-informed neural networks</p>
+				<h2 class="display-lg">Watch a network learn physics.</h2>
+				<p class="pinn__intro">
+					This network is trained only on Burgers' equation and its initial and boundary
+					conditions. It never sees the solution. <span class="hint">Scroll to train it.</span>
+				</p>
+			</div>
+
+			<figure class="pinn__figure">
+				<div class="pinn__head caption">
+					<span class="pinn__title">u(x, t = {run.t})</span>
+					<span class="pinn__legend">
+						<span><span class="swatch swatch--exact"></span>Exact solution</span>
+						<span><span class="swatch swatch--pinn"></span>PINN prediction</span>
+					</span>
+				</div>
+				<div
+					class="pinn__chart"
+					role="img"
+					aria-label={`The solution u at t = ${run.t} plotted over x from -1 to 1. It rises to about 0.85 just left of x = 0, drops steeply through zero at x = 0 (a shock), and mirrors that on the right. During training the prediction moves from a random curve to this shape; the final relative error is ${percent(last.error)}.`}
+				>
+					<span class="pinn__grid" style="top: 8.33%"></span>
+					<span class="pinn__grid pinn__grid--zero" style="top: 50%"></span>
+					<span class="pinn__grid" style="top: 91.67%"></span>
+					<span class="pinn__tick pinn__tick--y" style={`top: ${top(1)}`}>1</span>
+					<span class="pinn__tick pinn__tick--y" style="top: 50%">0</span>
+					<span class="pinn__tick pinn__tick--y" style={`top: ${top(-1)}`}>−1</span>
+					<svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
+						<path class="exact" d={line(run.exact)}></path>
+						<path class="prediction" d={line(last.u)}></path>
+					</svg>
+				</div>
+				<div class="pinn__axis caption" aria-hidden="true">
+					<span>−1</span><span>x = 0</span><span>1</span>
+				</div>
+
+				<dl class="pinn__stats readout">
+					<div>
+						<dt>Training step</dt>
+						<dd><output data-stat="step">{last.step.toLocaleString('en-US')}</output></dd>
+					</div>
+					<div>
+						<dt>Loss</dt>
+						<dd><output data-stat="loss">{last.loss.toExponential(1)}</output></dd>
+					</div>
+					<div>
+						<dt>Error</dt>
+						<dd><output data-stat="error">{percent(last.error)}</output></dd>
+					</div>
+					{
+						events.underOnePercent !== null && (
+							<div class="pinn__later">
+								<dt>Below 1% error at</dt>
+								<dd>step {events.underOnePercent.toLocaleString('en-US')}</dd>
+							</div>
+						)
+					}
+				</dl>
+
+				<p class="pinn__note">
+					After {run.steps.toLocaleString('en-US')} steps, the prediction is within{' '}
+					{percent(last.error)} of the exact solution.
+				</p>
+
+				<figcaption class="caption">
+					The curve is u(x, t = {run.t}) for u<sub>t</sub> + u u<sub>x</sub> = (0.01/π)
+					u<sub>xx</sub> on −1 ≤ x ≤ 1, with u(x, 0) = −sin(πx) and u(±1, t) = 0. The exact
+					solution comes from the Cole–Hopf transform. The network is a tanh network with 8
+					hidden layers of 20 units, trained with Adam for {run.steps.toLocaleString('en-US')} steps. Error
+					is the relative L<sup>2</sup> error over the whole domain, 0 &lt; t ≤ 1.
+				</figcaption>
+			</figure>
+		</div>
+	</div>
+</section>
+
+<script>
+	const root = document.querySelector<HTMLElement>('.pinn');
+	const path = root?.querySelector<SVGPathElement>('path.prediction');
+	const step = root?.querySelector<HTMLOutputElement>('[data-stat="step"]');
+	const loss = root?.querySelector<HTMLOutputElement>('[data-stat="loss"]');
+	const error = root?.querySelector<HTMLOutputElement>('[data-stat="error"]');
+	const note = root?.querySelector<HTMLElement>('.pinn__note');
+	const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	interface Frame {
+		step: number;
+		loss: number;
+		error: number;
+		u: number[];
+	}
+
+	// Without motion the page keeps the finished prediction it was built with
+	if (root && path && step && loss && error && note && !still) {
+		const limit = Number(root.dataset.limit);
+		const notes: { from: number; text: string }[] = JSON.parse(root.dataset.notes ?? '[]');
+		const underOnePercent = root.dataset.underOnePercent ? Number(root.dataset.underOnePercent) : Infinity;
+		let noted = -1;
+
+		// The sentence for the stage the shown step is in, faded in when it changes
+		const setNote = (current: number) => {
+			let index = 0;
+			notes.forEach((entry, i) => {
+				if (current >= entry.from) index = i;
+			});
+			if (index === noted) return;
+			noted = index;
+			note.classList.remove('is-new');
+			void note.offsetWidth;
+			note.textContent = notes[index].text;
+			note.classList.add('is-new');
+		};
+
+		fetch('/pinn/burgers.json')
+			.then((response) => response.json())
+			.then((run: { x: number[]; frames: Frame[] }) => {
+				const xs = run.x.map((x) => (500 * (x + 1)).toFixed(1));
+				const lines = run.frames.map((frame) =>
+					frame.u.map((u, i) => `${i ? 'L' : 'M'}${xs[i]},${(50 - (50 * u) / limit).toFixed(2)}`).join(''),
+				);
+				const percent = (value: number) => `${(100 * value).toFixed(value < 0.1 ? 2 : 1)}%`;
+				let shown = -1;
+
+				const show = (index: number) => {
+					if (index === shown) return;
+					shown = index;
+					const frame = run.frames[index];
+					path.setAttribute('d', lines[index]);
+					step.textContent = frame.step.toLocaleString('en-US');
+					loss.textContent = frame.loss.toExponential(1);
+					error.textContent = percent(frame.error);
+					root.toggleAttribute('data-converged', frame.step >= underOnePercent);
+					setNote(frame.step);
+				};
+
+				let ticking = false;
+				const onScroll = () => {
+					if (ticking) return;
+					ticking = true;
+					requestAnimationFrame(() => {
+						ticking = false;
+						const span = root.offsetHeight - innerHeight;
+						const progress = Math.min(Math.max((scrollY - root.offsetTop) / span, 0), 1);
+						show(Math.round(progress * (run.frames.length - 1)));
+					});
+				};
+				root.setAttribute('data-ready', '');
+				addEventListener('scroll', onScroll, { passive: true });
+				addEventListener('resize', onScroll);
+				onScroll();
+			});
+	} else {
+		root?.setAttribute('data-converged', '');
+	}
+</script>

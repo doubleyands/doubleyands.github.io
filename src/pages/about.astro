@@ -1,4 +1,5 @@
 ---
+import PinnTraining from '../components/PinnTraining.astro';
 import { profile } from '../data/profile';
 import Base from '../layouts/Base.astro';
 ---
@@ -11,6 +12,8 @@ import Base from '../layouts/Base.astro';
 			<p class="intro">{profile.intro.join(' ')}</p>
 		</div>
 	</section>
+
+	<PinnTraining />
 
 	<section class="tile tile--parchment">
 		<div class="container">
