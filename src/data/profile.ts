@@ -34,6 +34,7 @@ export const profile = {
 			note: 'Primary major in Data Science, double major in Mathematics',
 		},
 	],
+	scholar: 'https://scholar.google.com/citations?user=PYyqO6AAAAAJ',
 	publications: [
 		{
 			title:
