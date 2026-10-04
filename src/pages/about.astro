@@ -65,15 +65,12 @@ import Base from '../layouts/Base.astro';
 				{
 					profile.publications.map((publication) => (
 						<li class="reveal">
-							<h3 class="tagline">{publication.title}</h3>
+							<h3 class="tagline">
+								<a href={publication.url}>{publication.title}</a>
+							</h3>
 							<p class="byline caption">
 								{publication.authors} · {publication.venue}
 							</p>
-							<div class="cta-row">
-								<a class="pill" href={publication.url}>
-									{publication.action}
-								</a>
-							</div>
 						</li>
 					))
 				}
