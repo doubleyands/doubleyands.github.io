@@ -510,7 +510,8 @@ a {
 	margin: 0;
 }
 
-.flow-hero__stats dt {
+/* Live readouts next to a scroll-driven chart (flow hero, PINN training) */
+.readout dt {
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -521,7 +522,7 @@ a {
 	white-space: nowrap;
 }
 
-.flow-hero__stats dd {
+.readout dd {
 	margin: 2px 0 0;
 	font-size: 21px;
 	font-weight: 600;
@@ -530,7 +531,7 @@ a {
 	white-space: nowrap;
 }
 
-.flow-hero__stats .swatch {
+.readout .swatch {
 	width: 12px;
 	height: 2px;
 	border-radius: 1px;
@@ -580,8 +581,196 @@ a {
 		gap: var(--sp-md);
 	}
 
-	.flow-hero__stats dd {
+	.readout dd {
 		font-size: 17px;
+	}
+}
+
+/* PINN training on the About page: pinned while scrolling plays the training run */
+
+.pinn {
+	height: 220vh;
+	background: var(--black);
+	color: var(--on-dark);
+}
+
+.pinn__pin {
+	position: sticky;
+	top: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	height: 100vh;
+	height: 100svh;
+	overflow: hidden;
+}
+
+.pinn__text {
+	max-width: var(--measure);
+	margin: 0 auto var(--sp-xl);
+	text-align: center;
+}
+
+.pinn .eyebrow,
+.pinn__intro {
+	color: var(--muted-on-dark);
+}
+
+.pinn__intro {
+	margin-top: var(--sp-sm);
+}
+
+.pinn__figure {
+	margin: 0;
+}
+
+/* Above the chart: what is plotted on the left, the legend on the right */
+.pinn__head {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: var(--sp-xs) var(--sp-lg);
+	margin-bottom: var(--sp-xs);
+	color: var(--muted-on-dark);
+}
+
+.pinn__legend {
+	display: flex;
+	gap: var(--sp-lg);
+}
+
+.pinn__legend > span {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.pinn .swatch--exact {
+	width: 16px;
+	border-top: 2px dashed rgba(255, 255, 255, 0.75);
+}
+
+.pinn .swatch--pinn {
+	width: 16px;
+	height: 2px;
+	border-radius: 1px;
+	background: var(--primary-on-dark);
+}
+
+/* Room on the left for the u tick labels */
+.pinn__chart {
+	position: relative;
+	height: clamp(150px, 32svh, 320px);
+	margin-left: 28px;
+}
+
+.pinn__grid {
+	position: absolute;
+	right: 0;
+	left: 0;
+	border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pinn__grid--zero {
+	border-top-color: rgba(255, 255, 255, 0.18);
+}
+
+.pinn__tick--y {
+	position: absolute;
+	right: calc(100% + 10px);
+	color: var(--muted-on-dark);
+	font-size: 12px;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+	transform: translateY(-50%);
+}
+
+.pinn__chart svg {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+.pinn__chart path {
+	fill: none;
+	stroke-linejoin: round;
+	vector-effect: non-scaling-stroke;
+}
+
+.pinn__chart .exact {
+	stroke: rgba(255, 255, 255, 0.75);
+	stroke-width: 2;
+	stroke-dasharray: 5 5;
+}
+
+.pinn__chart .prediction {
+	stroke: var(--primary-on-dark);
+	stroke-width: 2.5;
+}
+
+.pinn__axis {
+	display: flex;
+	justify-content: space-between;
+	margin: 6px 0 0 28px;
+	color: var(--muted-on-dark);
+	font-size: 12px;
+}
+
+.pinn__stats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--sp-sm) var(--sp-xl);
+	margin: var(--sp-md) 0 0;
+}
+
+.pinn__later {
+	opacity: 0;
+	transform: translateY(8px);
+	transition:
+		opacity 0.6s ease,
+		transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pinn[data-converged] .pinn__later {
+	opacity: 1;
+	transform: none;
+}
+
+/* The sentence for the current stage of training; two lines are kept so nothing jumps */
+.pinn__note {
+	min-height: calc(2em * 1.47);
+	margin-top: var(--sp-md);
+	color: var(--on-dark);
+}
+
+.pinn__note.is-new {
+	animation: pinn-note 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pinn-note {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+
+.pinn figcaption {
+	margin-top: var(--sp-sm);
+	color: var(--muted-on-dark);
+	font-size: 12px;
+	line-height: 1.34;
+	letter-spacing: -0.12px;
+}
+
+@media (max-width: 640px) {
+	.pinn__text {
+		margin-bottom: var(--sp-lg);
+	}
+
+	.pinn__stats {
+		gap: var(--sp-sm) var(--sp-lg);
 	}
 }
 
@@ -598,6 +787,20 @@ a {
 	}
 
 	.flow-hero .hint {
+		display: none;
+	}
+
+	.pinn {
+		height: auto;
+	}
+
+	.pinn__pin {
+		position: static;
+		height: auto;
+		padding: var(--sp-section) 0;
+	}
+
+	.pinn .hint {
 		display: none;
 	}
 }
