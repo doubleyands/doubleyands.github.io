@@ -1,8 +1,17 @@
 ---
 import flow from '../data/flow.json';
+import lift from '../data/flow-lift.json';
 import { profile } from '../data/profile';
 
 const lastFrame = String(flow.frames - 1).padStart(3, '0');
+
+// Lift chart: x is the frame, y is C_L in [-LIMIT, LIMIT], in a 1000 x 100 box
+const LIMIT = 1.1;
+const last = lift.cl.length - 1;
+const liftPath = lift.cl
+	.map((cl, i) => `${i ? 'L' : 'M'}${((1000 * i) / last).toFixed(1)},${(50 - (50 * cl) / LIMIT).toFixed(2)}`)
+	.join('');
+const at = (t: number) => `${((100 * (t - lift.from)) / (lift.to - lift.from)).toFixed(2)}%`;
 ---
 
 <section
@@ -10,6 +19,10 @@ const lastFrame = String(flow.frames - 1).padStart(3, '0');
 	data-times={JSON.stringify(flow.times)}
 	data-width={flow.width}
 	data-height={flow.height}
+	data-lift={JSON.stringify(lift.cl)}
+	data-limit={LIMIT}
+	data-shedding-start={lift.sheddingStart}
+	data-strouhal-at={lift.strouhal.shownAt}
 >
 	<div class="flow-hero__pin">
 		<div class="container flow-hero__text">
@@ -26,12 +39,39 @@ const lastFrame = String(flow.frames - 1).padStart(3, '0');
 		<figure class="flow-hero__stage">
 			<canvas width={flow.width} height={flow.height} aria-hidden="true"></canvas>
 			<noscript><img src={`/flow/lg/${lastFrame}.webp`} alt="" /></noscript>
+			<div class="container flow-hero__data">
+				<div
+					class="flow-hero__chart"
+					role="img"
+					aria-label={`Lift coefficient over the ${lift.to} seconds shown: near zero until about ${lift.sheddingStart.toFixed(1)} s, then an oscillation that grows to about ±${lift.peak.toFixed(1)}.`}
+				>
+					<svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
+						<path d={liftPath}></path>
+					</svg>
+					<span class="flow-hero__marker" style={`left: ${at(lift.sheddingStart)}`}>
+						<span>Vortex shedding starts</span>
+					</span>
+					<span class="flow-hero__dot"></span>
+				</div>
+				<dl class="flow-hero__stats">
+					<div>
+						<dt>Time</dt>
+						<dd><output data-stat="time">0.00</output> s</dd>
+					</div>
+					<div>
+						<dt><span class="swatch"></span>Lift coefficient</dt>
+						<dd><output data-stat="lift">+0.00</output></dd>
+					</div>
+					<div class="flow-hero__later">
+						<dt>Strouhal number</dt>
+						<dd>{lift.strouhal.value.toFixed(2)}</dd>
+					</div>
+				</dl>
+			</div>
 			<figcaption class="container">
-				<span>
-					Flow past a cylinder at Re = 100, the DFG 2D-2 benchmark setup. Vorticity from a
-					lattice Boltzmann simulation. <span class="hint">Scroll to advance time.</span>
-				</span>
-				<span class="clock">t = <output>0.00</output> s</span>
+				Flow past a cylinder at Re = 100, the DFG 2D-2 benchmark setup. Vorticity from a lattice
+				Boltzmann simulation. The blue line is the lift on the cylinder.{' '}
+				<span class="hint">Scroll to advance time.</span>
 			</figcaption>
 		</figure>
 	</div>
@@ -41,10 +81,17 @@ const lastFrame = String(flow.frames - 1).padStart(3, '0');
 	const root = document.querySelector<HTMLElement>('.flow-hero');
 	const canvas = root?.querySelector('canvas');
 	const context = canvas?.getContext('2d');
-	const clock = root?.querySelector('output');
+	const time = root?.querySelector<HTMLOutputElement>('[data-stat="time"]');
+	const liftValue = root?.querySelector<HTMLOutputElement>('[data-stat="lift"]');
+	const chart = root?.querySelector<SVGElement>('.flow-hero__chart svg');
+	const dot = root?.querySelector<HTMLElement>('.flow-hero__dot');
 
-	if (root && canvas && context && clock) {
+	if (root && canvas && context && time && liftValue && chart && dot) {
 		const times: number[] = JSON.parse(root.dataset.times ?? '[]');
+		const lift: number[] = JSON.parse(root.dataset.lift ?? '[]');
+		const limit = Number(root.dataset.limit);
+		const sheddingStart = Number(root.dataset.sheddingStart);
+		const strouhalAt = Number(root.dataset.strouhalAt);
 		const count = times.length;
 		const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const saveData = (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
@@ -77,6 +124,20 @@ const lastFrame = String(flow.frames - 1).padStart(3, '0');
 			return -1;
 		};
 
+		// The lift chart, the readouts and the two marked moments follow the frame on screen
+		const setTime = (index: number) => {
+			const t = times[index];
+			const cl = lift[index];
+			const progress = index / (count - 1);
+			time.textContent = t.toFixed(2);
+			liftValue.textContent = `${cl < 0 ? '−' : '+'}${Math.abs(cl).toFixed(2)}`;
+			chart.style.clipPath = `inset(0 ${(100 * (1 - progress)).toFixed(2)}% 0 0)`;
+			dot.style.left = `${100 * progress}%`;
+			dot.style.top = `${50 - (50 * cl) / limit}%`;
+			root.toggleAttribute('data-shedding', t >= sheddingStart);
+			root.toggleAttribute('data-periodic', t >= strouhalAt);
+		};
+
 		const draw = () => {
 			const index = nearest(wanted);
 			if (index < 0 || index === shown) return;
@@ -97,7 +158,7 @@ const lastFrame = String(flow.frames - 1).padStart(3, '0');
 				canvas.height,
 			);
 			shown = index;
-			clock.textContent = times[index].toFixed(2);
+			setTime(index);
 		};
 
 		const load = (index: number) =>

@@ -34,6 +34,7 @@ const current = (prefix: string) => (path.startsWith(prefix) ? 'page' : undefine
 			rel="stylesheet"
 			href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
 		/>
+		<script is:inline>document.documentElement.classList.add('js');</script>
 		<title>{pageTitle}</title>
 		<meta name="description" content={description} />
 		<meta property="og:type" content="website" />
@@ -66,5 +67,28 @@ const current = (prefix: string) => (path.startsWith(prefix) ? 'page' : undefine
 				</span>
 			</div>
 		</footer>
+		<script>
+			// Each .reveal element rises into place the first time it scrolls into view.
+			// Elements that come into view together follow one another by a short delay.
+			const items = document.querySelectorAll<HTMLElement>('.reveal');
+			if ('IntersectionObserver' in window) {
+				const observer = new IntersectionObserver(
+					(entries) => {
+						entries
+							.filter((entry) => entry.isIntersecting)
+							.forEach((entry, order) => {
+								const item = entry.target as HTMLElement;
+								item.style.transitionDelay = `${Math.min(order, 5) * 80}ms`;
+								item.classList.add('is-in');
+								observer.unobserve(item);
+							});
+					},
+					{ rootMargin: '0px 0px -8% 0px', threshold: 0.1 },
+				);
+				items.forEach((item) => observer.observe(item));
+			} else {
+				items.forEach((item) => item.classList.add('is-in'));
+			}
+		</script>
 	</body>
 </html>

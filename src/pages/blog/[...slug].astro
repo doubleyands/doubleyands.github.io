@@ -4,6 +4,7 @@ import PostCards from '../../components/PostCards.astro';
 import SubNav from '../../components/SubNav.astro';
 import Base from '../../layouts/Base.astro';
 import { getPosts, isoDate } from '../../lib/posts';
+import { transitionName } from '../../lib/transitions';
 
 export async function getStaticPaths() {
 	const posts = await getPosts();
@@ -40,7 +41,7 @@ const { Content } = await render(post);
 			<p class="meta caption">
 				<time datetime={isoDate(pubDate)}>{isoDate(pubDate)}</time>
 			</p>
-			<h1 class="display-lg">{title}</h1>
+			<h1 class="display-lg" style={transitionName('post', post.id)}>{title}</h1>
 			<p class="description">{description}</p>
 			{updatedDate && <p class="updated caption">Updated {isoDate(updatedDate)}</p>}
 		</header>
@@ -62,7 +63,7 @@ const { Content } = await render(post);
 		others.length > 0 && (
 			<section class="tile tile--parchment">
 				<div class="container">
-					<div class="tile-head">
+					<div class="tile-head reveal">
 						<p class="eyebrow caption-strong">{project}</p>
 						<h2 class="display-lg">More from this project</h2>
 					</div>

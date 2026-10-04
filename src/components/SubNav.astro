@@ -1,4 +1,6 @@
 ---
+import { transitionName } from '../lib/transitions';
+
 interface Props {
 	name: string;
 	href?: string;
@@ -11,7 +13,7 @@ const { name, href } = Astro.props;
 	<div class="container">
 		{
 			href ? (
-				<a class="name tagline" href={href}>
+				<a class="name tagline" href={href} style={transitionName('project', name)}>
 					{name}
 				</a>
 			) : (
