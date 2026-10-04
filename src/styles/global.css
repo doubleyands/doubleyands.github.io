@@ -898,6 +898,11 @@ a {
 	text-wrap: balance;
 }
 
+.profile-link {
+	margin-top: var(--sp-xxl);
+	font-size: 17px;
+}
+
 .publications .byline {
 	margin-top: var(--sp-sm);
 	color: var(--muted-on-dark);
