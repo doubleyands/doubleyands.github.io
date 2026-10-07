@@ -40,7 +40,7 @@ export const profile = {
 			title:
 				'Physics-Informed Perceiver IO: scalable mesh-free solving of partial differential equations without supervision',
 			authors: 'Y. Yang, E. Lee',
-			venue: 'Journal of Computational Physics, 2026',
+			venue: 'Journal of Computational Physics, 569 (2027), 115455',
 			url: 'https://doi.org/10.1016/j.jcp.2026.115455',
 		},
 		{
