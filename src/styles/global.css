@@ -827,6 +827,17 @@ a {
 	color: var(--ink);
 }
 
+/* The post's chart fills the top of the card, edge to edge. */
+.card .thumb {
+	display: block;
+	width: calc(100% + 2 * var(--sp-lg));
+	max-width: none;
+	height: auto;
+	margin: calc(-1 * var(--sp-lg)) calc(-1 * var(--sp-lg)) var(--sp-lg);
+	border-radius: calc(var(--r-lg) - 1px) calc(var(--r-lg) - 1px) 0 0;
+	background: var(--parchment);
+}
+
 .card .project {
 	margin-bottom: var(--sp-xs);
 	color: var(--ink-48);
