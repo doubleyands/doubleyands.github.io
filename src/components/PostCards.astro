@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { isoDate } from '../lib/posts';
+import { THUMB_HEIGHT, THUMB_WIDTH, thumbnailPath } from '../lib/thumbnail';
 import { transitionName } from '../lib/transitions';
 
 interface Props {
@@ -13,20 +14,34 @@ const { posts, showProject = true } = Astro.props;
 
 <ul class="card-grid">
 	{
-		posts.map((post) => (
-			<li class="reveal">
-				<a class="card" href={`/blog/${post.id}/`}>
-					{showProject && <span class="project caption-strong">{post.data.project}</span>}
-					<h3 class="tagline" style={transitionName('post', post.id)}>
-						{post.data.title}
-					</h3>
-					<p class="description">{post.data.description}</p>
-					<p class="foot caption">
-						<time datetime={isoDate(post.data.pubDate)}>{isoDate(post.data.pubDate)}</time>
-						<span class="more">Read &rsaquo;</span>
-					</p>
-				</a>
-			</li>
-		))
+		posts.map((post) => {
+			const thumbnail = thumbnailPath(post);
+			return (
+				<li class="reveal">
+					<a class="card" href={`/blog/${post.id}/`}>
+						{thumbnail && (
+							<img
+								class="thumb"
+								src={thumbnail}
+								width={THUMB_WIDTH}
+								height={THUMB_HEIGHT}
+								alt=""
+								loading="lazy"
+								decoding="async"
+							/>
+						)}
+						{showProject && <span class="project caption-strong">{post.data.project}</span>}
+						<h3 class="tagline" style={transitionName('post', post.id)}>
+							{post.data.title}
+						</h3>
+						<p class="description">{post.data.description}</p>
+						<p class="foot caption">
+							<time datetime={isoDate(post.data.pubDate)}>{isoDate(post.data.pubDate)}</time>
+							<span class="more">Read &rsaquo;</span>
+						</p>
+					</a>
+				</li>
+			);
+		})
 	}
 </ul>

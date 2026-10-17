@@ -4,6 +4,7 @@ import PostCards from '../../components/PostCards.astro';
 import SubNav from '../../components/SubNav.astro';
 import Base from '../../layouts/Base.astro';
 import { getPosts, isoDate } from '../../lib/posts';
+import { thumbnailPath } from '../../lib/thumbnail';
 import { transitionName } from '../../lib/transitions';
 
 export async function getStaticPaths() {
@@ -30,7 +31,7 @@ const projectHref = `/projects/${project}/`;
 const { Content } = await render(post);
 ---
 
-<Base title={title} description={description}>
+<Base title={title} description={description} image={thumbnailPath(post)}>
 	<SubNav name={project} href={projectHref}>
 		<a href="/">All posts</a>
 		<a class="pill pill--sm" href={projectHref}>View project</a>
