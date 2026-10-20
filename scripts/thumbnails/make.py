@@ -258,6 +258,29 @@ def cubic_spline():
     return svg(*parts)
 
 
+def convergence_order():
+    """Lecture 5: error against h on log scales. A straight line whose slope is the order."""
+    # log h from -6 (left) to 0 (right). Straight with slope 2 for small h, flat at the start.
+    def logE(t):
+        return 2 * t - math.log(1 + math.exp(2.2 * (t + 1.2))) / 1.1
+
+    P = mapper(-6.3, 0.3, -12.8, -1.0, 200, 1040, 80, 480)
+    left, bottom = 150, 540
+    parts = [
+        polyline([(left, 70), (left, bottom), (1080, bottom)], GRAY, 4),
+    ]
+    # Slope triangle under the straight part: run 2, rise 4
+    a, b = -5.0, -3.0
+    pa, pb = P(a, logE(a)), P(b, logE(b))
+    corner = (pb[0], pa[1])
+    parts.append(polyline([pa, corner, pb], BLUE, 5))
+    parts.append(polyline([P(x, y) for x, y in sample(logE, -6, 0, 300)], INK, 6))
+    for k in range(7):
+        t = -6 + k
+        parts.append(dot(*P(t, logE(t)), r=12))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -266,6 +289,7 @@ DRAWINGS = {
     "2026-10-13-numerical-pde-lecture-3": five_point_stencil,
     "2026-10-15-numerical-pde-lecture-4": boundary_layer,
     "2026-10-17-numerical-analysis-week-3": cubic_spline,
+    "2026-10-20-numerical-pde-lecture-5": convergence_order,
 }
 
 
