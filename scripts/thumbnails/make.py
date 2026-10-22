@@ -281,6 +281,25 @@ def convergence_order():
     return svg(*parts)
 
 
+def integral_view():
+    """Lecture 6: one time step as an area. The left rectangle (Forward Euler) and the trapezoid."""
+    fn = lambda t: 0.35 + 0.5 * t ** 2
+    P = mapper(-0.15, 1.15, 0, 1.0, 150, 1050, 70, 520)
+    a, b = 0.15, 0.85
+    (xa, ya), (xb, yb) = P(a, fn(a)), P(b, fn(b))
+    base = P(0, 0)[1]
+    parts = [f'<path d="M{xa:.1f},{base:.1f} L{xa:.1f},{ya:.1f} L{xb:.1f},{yb:.1f} L{xb:.1f},{base:.1f} Z" fill="{FAINT}" opacity="0.7"/>']
+    parts.append(polyline([(xa, base), (xa, ya), (xb, ya), (xb, base)], GRAY, 5, "14 12"))
+    parts.append(polyline([(xa, ya), (xb, yb)], BLUE, 6))
+    parts.append(line(xb, base, xb, yb, BLUE, 6))
+    parts.append(line(xa, base, xa, ya, BLUE, 6))
+    parts.append(line(150, base, 1050, base, GRAY, 4))
+    parts.append(polyline([P(x, y) for x, y in sample(fn, -0.1, 1.1, 300)], INK, 6))
+    parts.append(dot(xa, ya, r=12))
+    parts.append(dot(xb, yb, r=12))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -290,6 +309,7 @@ DRAWINGS = {
     "2026-10-15-numerical-pde-lecture-4": boundary_layer,
     "2026-10-17-numerical-analysis-week-3": cubic_spline,
     "2026-10-20-numerical-pde-lecture-5": convergence_order,
+    "2026-10-22-numerical-pde-lecture-6": integral_view,
 }
 
 
