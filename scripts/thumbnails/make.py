@@ -300,6 +300,33 @@ def integral_view():
     return svg(*parts)
 
 
+def gauss_quadrature():
+    """Week 4: 3-point Gauss rule as rectangles. Widths are the weights, heights are f at the inner nodes."""
+    fn = lambda x: 0.55 + 0.3 * math.sin(2.2 * x + 0.4) + 0.12 * x * x
+    P = mapper(-1.15, 1.15, 0, 1.05, 150, 1050, 70, 520)
+    base = P(0, 0)[1]
+    r = math.sqrt(0.6)
+    nodes = [-r, 0.0, r]
+    weights = [5 / 9, 8 / 9, 5 / 9]
+    parts = []
+    left = -1.0
+    for x, w in zip(nodes, weights):
+        (xl, yt), (xr, _) = P(left, fn(x)), P(left + w, fn(x))
+        parts.append(f'<rect x="{xl:.1f}" y="{yt:.1f}" width="{xr - xl:.1f}" height="{base - yt:.1f}" fill="{FAINT}" opacity="0.7"/>')
+        parts.append(polyline([(xl, base), (xl, yt), (xr, yt), (xr, base)], GRAY, 4))
+        left += w
+    parts.append(line(150, base, 1050, base, GRAY, 4))
+    parts.append(polyline([P(x, y) for x, y in sample(fn, -1.1, 1.1, 300)], INK, 6))
+    for x in nodes:
+        px, py = P(x, fn(x))
+        parts.append(line(px, base, px, py, BLUE, 6))
+        parts.append(dot(px, py, r=12, fill=BLUE))
+    for x in (-1.0, 1.0):
+        px, _ = P(x, 0)
+        parts.append(line(px, base - 14, px, base + 14, INK, 5))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -310,6 +337,7 @@ DRAWINGS = {
     "2026-10-17-numerical-analysis-week-3": cubic_spline,
     "2026-10-20-numerical-pde-lecture-5": convergence_order,
     "2026-10-22-numerical-pde-lecture-6": integral_view,
+    "2026-10-24-numerical-analysis-week-4": gauss_quadrature,
 }
 
 
