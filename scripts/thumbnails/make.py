@@ -327,6 +327,31 @@ def gauss_quadrature():
     return svg(*parts)
 
 
+def rk2_midpoint():
+    """Lecture 7: RK2. Half an Euler step to the middle (gray), then the full step with the slope found there (blue)."""
+    lam, u0 = 1.2, 0.5
+    fn = lambda t: u0 * math.exp(lam * t)
+    P = mapper(-0.1, 1.1, 0.3, 1.9, 150, 1050, 70, 560)
+    ustar = u0 + 0.5 * lam * u0
+    u1 = u0 + lam * ustar
+    x0, y0 = P(0, u0)
+    xs, ys = P(0.5, ustar)
+    x1, y1 = P(1, u1)
+    base = P(0, 0.3)[1]
+    parts = [line(P(0.5, 0.3)[0], base, xs, ys, FAINT, 4, "10 12")]
+    parts.append(line(P(1, 0.3)[0], base, P(1, 0.3)[0], P(1, fn(1))[1], FAINT, 4, "10 12"))
+    parts.append(polyline([P(t, u) for t, u in sample(fn, -0.05, 1.08, 300)], INK, 6))
+    parts.append(line(x0, y0, xs, ys, GRAY, 5, "14 12"))
+    # slope at the middle guess, drawn as a short segment through U*
+    dx = 0.16
+    parts.append(line(*P(0.5 - dx, ustar - dx * lam * ustar), *P(0.5 + dx, ustar + dx * lam * ustar), GRAY, 5))
+    parts.append(line(x0, y0, x1, y1, BLUE, 6))
+    parts.append(dot(xs, ys, r=11, fill=GRAY))
+    parts.append(dot(x0, y0, r=12))
+    parts.append(dot(x1, y1, r=12, fill=BLUE))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -338,6 +363,7 @@ DRAWINGS = {
     "2026-10-20-numerical-pde-lecture-5": convergence_order,
     "2026-10-22-numerical-pde-lecture-6": integral_view,
     "2026-10-24-numerical-analysis-week-4": gauss_quadrature,
+    "2026-10-27-numerical-pde-lecture-7": rk2_midpoint,
 }
 
 
