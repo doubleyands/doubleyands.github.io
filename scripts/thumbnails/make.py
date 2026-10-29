@@ -351,6 +351,21 @@ def rk2_midpoint():
     parts.append(dot(x1, y1, r=12, fill=BLUE))
     return svg(*parts)
 
+def tangent_exp():
+    """Lecture 8: the key step of the convergence proof, 1 + x <= e^x. The tangent line (blue) stays under e^x."""
+    P = mapper(-2.2, 1.4, -0.9, 3.6, 150, 1050, 70, 560)
+    parts = [line(*P(-2.2, 0), *P(1.4, 0), GRAY, 4)]
+    parts.append(line(*P(0, -0.9), *P(0, 3.6), GRAY, 4))
+    # gap between the two curves, lightly filled
+    top = [P(x, math.exp(x)) for x, _ in sample(math.exp, -1.9, 1.25, 200)]
+    bottom = [P(x, 1 + x) for x, _ in sample(math.exp, 1.25, -1.9, 200)]
+    d = "M" + " L".join(f"{x:.1f},{y:.1f}" for x, y in top + bottom) + " Z"
+    parts.append(f'<path d="{d}" fill="{FAINT}" opacity="0.7"/>')
+    parts.append(polyline([P(x, 1 + x) for x in (-1.9, 1.3)], BLUE, 6))
+    parts.append(polyline([P(x, y) for x, y in sample(math.exp, -2.1, 1.27, 300)], INK, 6))
+    parts.append(dot(*P(0, 1), r=12))
+    return svg(*parts)
+
 
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
@@ -364,6 +379,7 @@ DRAWINGS = {
     "2026-10-22-numerical-pde-lecture-6": integral_view,
     "2026-10-24-numerical-analysis-week-4": gauss_quadrature,
     "2026-10-27-numerical-pde-lecture-7": rk2_midpoint,
+    "2026-10-29-numerical-pde-lecture-8": tangent_exp,
 }
 
 
