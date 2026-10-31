@@ -367,6 +367,22 @@ def tangent_exp():
     return svg(*parts)
 
 
+def perturbed_fan():
+    """Week 5: an ill-conditioned IVP. Tiny changes of y(0) (gray) leave the true solution (blue) fast."""
+    lam = 6.0
+    P = mapper(-0.05, 1.05, -0.2, 1.4, 150, 1050, 70, 560)
+    true = lambda x: math.exp(-x)
+    parts = [line(*P(0, -0.2), *P(0, 1.4), GRAY, 4)]
+    parts.append(line(*P(-0.05, 0), *P(1.05, 0), GRAY, 4))
+    for eps in (-3e-3, -1e-3, -3e-4, 3e-4, 1e-3, 3e-3):
+        fn = lambda x, e=eps: true(x) + e * math.exp(lam * x)
+        pts = [(x, y) for x, y in sample(fn, 0, 1.0, 400) if -0.18 <= y <= 1.38]
+        parts.append(polyline([P(x, y) for x, y in pts], GRAY, 5))
+    parts.append(polyline([P(x, y) for x, y in sample(true, 0, 1.0, 300)], BLUE, 7))
+    parts.append(dot(*P(0, 1), r=12))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -380,6 +396,7 @@ DRAWINGS = {
     "2026-10-24-numerical-analysis-week-4": gauss_quadrature,
     "2026-10-27-numerical-pde-lecture-7": rk2_midpoint,
     "2026-10-29-numerical-pde-lecture-8": tangent_exp,
+    "2026-10-31-numerical-analysis-week-5": perturbed_fan,
 }
 
 
