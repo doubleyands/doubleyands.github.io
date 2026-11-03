@@ -367,6 +367,22 @@ def tangent_exp():
     return svg(*parts)
 
 
+def stability_disk():
+    """Lecture 9: stability regions in the complex z plane. Forward Euler's disk (blue), Backward Euler's circle (gray dashes)."""
+    P = mapper(-2.75, 2.75, -1.45, 1.45, 150, 1050, 70, 560)
+    cx, cy = P(0, 0)
+    r = P(1, 0)[0] - cx
+    parts = [line(*P(-2.75, 0), *P(2.75, 0), GRAY, 4)]
+    parts.append(line(*P(0, -1.45), *P(0, 1.45), GRAY, 4))
+    fx, fy = P(-1, 0)
+    parts.append(f'<circle cx="{fx:.1f}" cy="{fy:.1f}" r="{r:.1f}" fill="{BLUE}" fill-opacity="0.12" stroke="{BLUE}" stroke-width="6"/>')
+    bx, by = P(1, 0)
+    parts.append(f'<circle cx="{bx:.1f}" cy="{by:.1f}" r="{r:.1f}" fill="none" stroke="{GRAY}" stroke-width="5" stroke-dasharray="14 12"/>')
+    parts.append(dot(cx, cy, r=12))
+    parts.append(dot(*P(-2, 0), r=10, fill=BLUE))
+    return svg(*parts)
+
+
 def perturbed_fan():
     """Week 5: an ill-conditioned IVP. Tiny changes of y(0) (gray) leave the true solution (blue) fast."""
     lam = 6.0
@@ -397,6 +413,7 @@ DRAWINGS = {
     "2026-10-27-numerical-pde-lecture-7": rk2_midpoint,
     "2026-10-29-numerical-pde-lecture-8": tangent_exp,
     "2026-10-31-numerical-analysis-week-5": perturbed_fan,
+    "2026-11-03-numerical-pde-lecture-9": stability_disk,
 }
 
 
