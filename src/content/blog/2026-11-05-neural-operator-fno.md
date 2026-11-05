@@ -104,6 +104,16 @@ The same layout as the plane moves through the box:
 
 The field error is 0.64% and the charge error $\lVert \Delta Q \rVert / \lVert Q \rVert$ is 1.8%. Both are above the test means (0.37% and 1.09% for patterns with several conductors on) but inside the test range. The largest errors sit in the narrow gaps between the wires, where the potential drops from 1 V to 0 V over only five grid cells.
 
+**Try it yourself.** Below are three one-layer layouts that I drew, including the four wires. Every conductor crosses the middle plane $z = 0$, which the panels show. Pick a layout, then click a conductor (or its button) to switch it on or off. All 93 on/off patterns of these layouts were computed in advance, each with its own finite-difference solve and its own model output. Nothing is added up.
+
+<figure class="viz" id="onoff">
+<figcaption>The potential on the plane z = 0. Left: the finite-difference reference. Middle: the FNO output for the same on/off input. Right: their difference, on its own color scale (the numbers below it change with the pattern). The field error is over the whole box, not only this plane.</figcaption>
+<noscript><p>This interactive figure needs JavaScript.</p></noscript>
+</figure>
+<script src="/posts/NeuralOperator/toggle.js" defer></script>
+
+Over the 93 patterns, the field error is 0.60% on average and at most 0.88%. The charge error is 1.9% on average, but it jumps when **every** conductor is on: 6.4% for the four wires and 8.2% for the six conductors, higher than any test pattern. In both cases the model gives every conductor too much charge, while the field error stays below 0.9%. I do not know the cause yet.
+
 **All test patterns.** 99.4% of the 2872 test patterns have a field error below 1%.
 
 ![Histogram of the relative L2 error of the field over 2872 test patterns, on a log scale. Most errors lie between 0.15% and 0.6%, with a mean of 0.33%.](../../assets/posts/NeuralOperator/rel_l2.png)
