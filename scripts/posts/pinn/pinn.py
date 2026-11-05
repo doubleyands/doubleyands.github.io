@@ -364,7 +364,7 @@ def train(name, method, seed, device, adam=None, lbfgs=None, out_dir=None):
 
 
 def write_json(path, data):
-    tmp = path.with_suffix(".tmp")
+    tmp = path.with_suffix(f".{os.getpid()}.tmp")  # own name: workers write reference.json at once
     tmp.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
     os.replace(tmp, path)  # never leave a half-written result behind
 
@@ -460,7 +460,11 @@ def main():
     for name, method, seed in todo:
         if path(name, method, seed).exists():  # another process may have finished it meanwhile
             continue
-        r = train(name, method, seed, a.device, a.adam, a.lbfgs, a.out)
+        try:
+            r = train(name, method, seed, a.device, a.adam, a.lbfgs, a.out)
+        except Exception as e:  # one failed run must not stop the rest of this worker's share
+            print(f"{name} {method} s{seed}: FAILED {type(e).__name__}: {e}", flush=True)
+            continue
         err = ", ".join(f"{e:.2e}" for e in r["error"]) if r["error"] else "-"
         print(f"{name} {method} s{seed}: error {err}  {r['time']:.0f} s  {r['status']}", flush=True)
 
