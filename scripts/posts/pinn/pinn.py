@@ -17,6 +17,7 @@ Usage (from this folder):
   python pinn.py run 01-decay                    # 3 methods x 5 seeds, skips finished runs
   python pinn.py run 01-decay --method rba --seed 0
   python pinn.py run all --shard 3/16            # every 16th job from job 3 (parallel workers)
+  python pinn.py run 05-heat 06-advection --shard 0-3/16 --count   # jobs of shards 0..3 still to run
 Results go to NN-name/results/<method>-s<seed>.json and NN-name/results/reference.json.
 
 A problem module defines:
@@ -428,10 +429,12 @@ def check():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("command", choices=["check", "run"])
-    ap.add_argument("problem", nargs="?", default="all")
+    ap.add_argument("problem", nargs="*", default=["all"])
     ap.add_argument("--method", choices=METHODS)
     ap.add_argument("--seed", type=int)
-    ap.add_argument("--shard", default="0/1", help="i/n: run every n-th job starting at job i")
+    ap.add_argument("--shard", default="0/1",
+                    help="i/n: jobs k with k %% n == i (i may be a range a-b) of the list problem x method x seed")
+    ap.add_argument("--count", action="store_true", help="print how many jobs of the shard have no result, then stop")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--adam", type=int, help="override the number of Adam steps (smoke tests)")
     ap.add_argument("--lbfgs", type=int, help="override the number of L-BFGS iterations")
@@ -440,14 +443,22 @@ def main():
     if a.command == "check":
         return check()
 
-    names = problems() if a.problem == "all" else [a.problem]
+    names = problems() if a.problem == ["all"] else a.problem
     methods = [a.method] if a.method else METHODS
     seeds = [a.seed] if a.seed is not None else SEEDS
     jobs = [(n, m, s) for n in names for m in methods for s in seeds]
-    i, n = map(int, a.shard.split("/"))
-    for name, method, seed in jobs[i::n]:
-        path = (Path(a.out) if a.out else HERE / name / "results") / f"{method}-s{seed}.json"
-        if path.exists():
+    idx, n = a.shard.split("/")
+    lo, _, hi = idx.partition("-")
+    mine = range(int(lo), int(hi or lo) + 1)
+
+    def path(name, method, seed):
+        return (Path(a.out) if a.out else HERE / name / "results") / f"{method}-s{seed}.json"
+
+    todo = [j for k, j in enumerate(jobs) if k % int(n) in mine and not path(*j).exists()]
+    if a.count:
+        return print(len(todo))
+    for name, method, seed in todo:
+        if path(name, method, seed).exists():  # another process may have finished it meanwhile
             continue
         r = train(name, method, seed, a.device, a.adam, a.lbfgs, a.out)
         err = ", ".join(f"{e:.2e}" for e in r["error"]) if r["error"] else "-"
