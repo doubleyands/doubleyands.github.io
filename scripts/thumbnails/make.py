@@ -399,6 +399,23 @@ def perturbed_fan():
     return svg(*parts)
 
 
+def grid_eigenvectors():
+    """Lecture 10: eigenvectors of the second-difference matrix. The smoothest mode sin(pi x) (black) and the sawtooth mode p = N (blue) on the grid."""
+    n = 11  # interior points
+    h = 1 / (n + 1)
+    P = mapper(-0.02, 1.02, -1.15, 1.15, 150, 1050, 70, 560)
+    parts = [line(*P(0, 0), *P(1, 0), GRAY, 4)]
+    parts.append(polyline([P(x, y) for x, y in sample(lambda x: math.sin(math.pi * x), 0, 1, 300)], INK, 6))
+    saw = [(j * h, math.sin(n * math.pi * j * h)) for j in range(n + 2)]
+    parts.append(polyline([P(x, y) for x, y in saw], BLUE, 5))
+    for x, y in saw[1:-1]:
+        parts.append(dot(*P(x, y), r=9, fill=BLUE))
+        parts.append(dot(*P(x, math.sin(math.pi * x)), r=9))
+    parts.append(dot(*P(0, 0), r=11, fill=GRAY))
+    parts.append(dot(*P(1, 0), r=11, fill=GRAY))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -414,6 +431,7 @@ DRAWINGS = {
     "2026-10-29-numerical-pde-lecture-8": tangent_exp,
     "2026-10-31-numerical-analysis-week-5": perturbed_fan,
     "2026-11-03-numerical-pde-lecture-9": stability_disk,
+    "2026-11-05-numerical-pde-lecture-10": grid_eigenvectors,
 }
 
 
