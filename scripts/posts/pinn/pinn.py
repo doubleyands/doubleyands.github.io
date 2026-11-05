@@ -348,6 +348,7 @@ def train(name, method, seed, device, adam=None, lbfgs=None, out_dir=None):
         "params": {k: float(v) for k, v in net.extra.items()},
         "true_params": {k: t for k, (_, t) in getattr(prob, "PARAMS", {}).items()},
         "time": round(time.time() - start, 1), "device": str(device),
+        "torch": torch.__version__, "code_md5": code_md5(name),
         "history": history,
     }
     if seed == 0:  # the prediction and the point weights, for the figures
@@ -359,8 +360,24 @@ def train(name, method, seed, device, adam=None, lbfgs=None, out_dir=None):
                     "w": [short(v, 5) for v in weights.w[k][:2000].cpu().tolist()]}
                 for k in pts if len(weights.w[k]) == len(pts[k])
             }
-    write_json(out_dir / f"{method}-s{seed}.json", result)
+    # The trained network (with its Fourier matrix B) and the final loss weights, to evaluate
+    # it again later. Not in git (about 0.7 MB per run); kept with the raw data.
+    ckpt = out_dir / f"{method}-s{seed}.pt"
+    w = weights.w if isinstance(weights.w, dict) else {}
+    torch.save({"net": net.state_dict(), "weights": {k: v.cpu() if torch.is_tensor(v) else v for k, v in w.items()},
+                "problem": name, "method": method, "seed": seed}, ckpt.with_suffix(".pt.tmp"))
+    os.replace(ckpt.with_suffix(".pt.tmp"), ckpt)
+    write_json(out_dir / f"{method}-s{seed}.json", result)  # last: the .json marks a finished run
     return result
+
+
+def code_md5(name):
+    """md5 of pinn.py and the problem file, to tell later which code version made a result."""
+    import hashlib
+    h = hashlib.md5()
+    for path in (Path(__file__), HERE / name / "problem.py"):
+        h.update(path.read_bytes().replace(b"\r\n", b"\n"))  # same hash on Windows and Linux
+    return h.hexdigest()
 
 
 def write_json(path, data):
