@@ -98,6 +98,12 @@ The same layout as the plane moves through the box:
 
 <img src="/posts/NeuralOperator/sweep.webp" alt="Animation of the same test layout: the plane of the reference, prediction and difference moves up and down through the box. The difference stays small everywhere and is largest next to the conductors." width="1090" height="356" loading="lazy">
 
+**A layout I drew myself.** Four parallel wires, switched on, off, on, off (from the bottom). Each wire is like the training wires (thickness, length, spacing and distance to the walls are all inside the ranges of the generator), but the random generator does not make such a regular row. The reference is a direct finite-difference solve of this pattern, and the prediction is one model output for this input.
+
+<img src="/posts/NeuralOperator/bus-sweep.webp" alt="Animation of four parallel wires with the first and third at 1 V and the second and fourth at 0 V: the reference, the prediction and their difference on a plane that moves up and down through the box. The two on wires are dark blue, the two off wires stay white, and the difference is largest in the narrow gaps between the wires." width="1090" height="356" loading="lazy">
+
+The field error is 0.64% and the charge error $\lVert \Delta Q \rVert / \lVert Q \rVert$ is 1.8%. Both are above the test means (0.37% and 1.09% for patterns with several conductors on) but inside the test range. The largest errors sit in the narrow gaps between the wires, where the potential drops from 1 V to 0 V over only five grid cells.
+
 **All test patterns.** 99.4% of the 2872 test patterns have a field error below 1%.
 
 ![Histogram of the relative L2 error of the field over 2872 test patterns, on a log scale. Most errors lie between 0.15% and 0.6%, with a mean of 0.33%.](../../assets/posts/NeuralOperator/rel_l2.png)
