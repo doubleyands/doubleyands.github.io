@@ -433,6 +433,19 @@ def conductors_in_box():
     return svg(*parts)
 
 
+def pinn_decay():
+    """PINN Problem 1: the decay curve exp(-2t), the residual points on the t axis (blue), the start value u(0) = 1."""
+    P = mapper(0, 3, -0.12, 1.08, 150, 1050, 80, 540)
+    parts = [line(*P(0, 0), *P(3, 0), GRAY, 4), line(*P(0, -0.12), *P(0, 1.08), GRAY, 4)]
+    parts.append(polyline([P(t, math.exp(-2 * t)) for t, _ in sample(lambda t: 0, 0, 3, 300)], INK, 6))
+    for k in range(24):
+        t = 3 * (k + 0.5) / 24
+        parts.append(line(*P(t, 0), *P(t, math.exp(-2 * t)), FAINT, 3))
+        parts.append(dot(*P(t, 0), r=7, fill=BLUE, stroke=BG, width=3))
+    parts.append(dot(*P(0, 1), r=14))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -450,6 +463,7 @@ DRAWINGS = {
     "2026-11-03-numerical-pde-lecture-9": stability_disk,
     "2026-11-05-numerical-pde-lecture-10": grid_eigenvectors,
     "2026-11-05-neural-operator-fno": conductors_in_box,
+    "2026-11-06-pinn-01-decay": pinn_decay,
 }
 
 
