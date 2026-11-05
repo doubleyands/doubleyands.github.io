@@ -23,3 +23,6 @@ scripts/flow/out*/
 # PINN training checkpoints (large, reproducible with scripts/pinn/burgers.py)
 scripts/pinn/out/
 __pycache__/
+
+# PINN runs in progress (scripts/posts/pinn/pinn.py writes .tmp then renames)
+scripts/posts/pinn/**/*.tmp
