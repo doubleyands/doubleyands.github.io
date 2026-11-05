@@ -416,6 +416,23 @@ def grid_eigenvectors():
     return svg(*parts)
 
 
+def conductors_in_box():
+    """NeuralOperator FNO post: conductors in a grounded box. Two on (blue), one off (white), and level lines of
+    the potential around the on conductors."""
+    def rect(x, y, w, h, rx=0, fill="none", stroke=INK, width=6):
+        return (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" '
+                f'stroke="{stroke}" stroke-width="{width}"/>')
+    on = [(470, 200, 200, 40), (640, 372, 80, 80)]
+    parts = []
+    for x, y, w, h in on:
+        for d in (28, 58):
+            parts.append(rect(x - d, y - d, w + 2 * d, h + 2 * d, rx=d, stroke=GRAY, width=3))
+    parts += [rect(x, y, w, h, rx=4, fill=BLUE, stroke=BLUE) for x, y, w, h in on]
+    parts.append(rect(420, 475, 150, 26, rx=4, fill=WHITE))
+    parts.append(rect(360, 75, 480, 480))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -432,6 +449,7 @@ DRAWINGS = {
     "2026-10-31-numerical-analysis-week-5": perturbed_fan,
     "2026-11-03-numerical-pde-lecture-9": stability_disk,
     "2026-11-05-numerical-pde-lecture-10": grid_eigenvectors,
+    "2026-11-05-neural-operator-fno": conductors_in_box,
 }
 
 
