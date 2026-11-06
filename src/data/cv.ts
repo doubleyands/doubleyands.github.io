@@ -123,13 +123,13 @@ export const cv = {
 		{
 			period: 'Sep 2026 – present',
 			title: 'Graduate Researcher',
-			place: 'Numerical Analysis Lab, Yonsei University',
+			place: 'Applied Mathematics and Computing (AMC) Lab, Yonsei University',
 			lines: ['Neural network methods for PDEs: PINNs and neural operators.'],
 		},
 		{
 			period: 'Jan 2025 – Aug 2026',
 			title: 'Undergraduate Research Intern',
-			place: 'Numerical Analysis Lab, Yonsei University',
+			place: 'Applied Mathematics and Computing (AMC) Lab, Yonsei University',
 			lines: [
 				'Proposed Physics-Informed Perceiver IO (PIP-IO). It solves PDEs without labeled data and without a mesh. Published as first author in the Journal of Computational Physics.',
 				'Cut the attention cost of Transformer-based PINNs from O(N²) to O(mN) with latent cross-attention.',
@@ -186,7 +186,7 @@ export const cv = {
 			period: 'Sep 2026 – present',
 			title: 'M.S. in Computational Science and Engineering',
 			place: 'Yonsei University',
-			lines: ['Numerical Analysis Lab. Advisor: Prof. Eunjung Lee.'],
+			lines: ['Applied Mathematics and Computing (AMC) Lab. Advisor: Prof. Eunjung Lee.'],
 		},
 		{
 			period: 'Mar 2022 – Aug 2026',
