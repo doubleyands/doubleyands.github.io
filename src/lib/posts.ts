@@ -1,6 +1,11 @@
 import { type CollectionEntry, getCollection } from 'astro:content';
+import { COURSE_PROJECTS } from '../consts';
 
 type Post = CollectionEntry<'blog'>;
+
+export function isCourseNote(post: Post) {
+	return COURSE_PROJECTS.includes(post.data.project);
+}
 
 export async function getPosts() {
 	const posts = await getCollection('blog');

@@ -2,35 +2,70 @@
 import FlowHero from '../components/FlowHero.astro';
 import PostCards from '../components/PostCards.astro';
 import Base from '../layouts/Base.astro';
-import { getPosts, getProjects, postCount } from '../lib/posts';
+import { getPosts, getProjects, isCourseNote, postCount } from '../lib/posts';
 import { transitionName } from '../lib/transitions';
+
+// Research comes first. Course notes get a short row, and the rest is one click away.
+const RESEARCH_LIMIT = 6;
+const COURSE_LIMIT = 3;
 
 const posts = await getPosts();
 const projects = getProjects(posts);
+const research = posts.filter((post) => !isCourseNote(post));
+const courseNotes = posts.filter(isCourseNote);
+const courses = getProjects(courseNotes);
 ---
 
 <Base>
 	<FlowHero />
 
-	<section class="tile tile--parchment">
-		<div class="container">
-			{
-				posts.length === 0 ? (
+	{
+		posts.length === 0 && (
+			<section class="tile tile--parchment">
+				<div class="container">
 					<div class="empty">
 						<h2 class="tagline">No posts yet.</h2>
 						<p>Experiment notes will appear here.</p>
 					</div>
-				) : (
-					<>
-						<div class="tile-head reveal">
-							<h2 class="display-lg">Latest posts</h2>
-						</div>
-						<PostCards posts={posts} />
-					</>
-				)
-			}
-		</div>
-	</section>
+				</div>
+			</section>
+		)
+	}
+
+	{
+		research.length > 0 && (
+			<section class="tile tile--parchment">
+				<div class="container">
+					<div class="tile-head reveal">
+						<h2 class="display-lg">Research</h2>
+						<p class="lead">Experiments with neural networks that solve PDEs.</p>
+					</div>
+					<PostCards posts={research.slice(0, RESEARCH_LIMIT)} />
+				</div>
+			</section>
+		)
+	}
+
+	{
+		courseNotes.length > 0 && (
+			<section class="tile">
+				<div class="container">
+					<div class="tile-head reveal">
+						<h2 class="display-lg">Course notes</h2>
+						<p class="lead">My notes on numerical methods, one lecture at a time.</p>
+					</div>
+					<PostCards posts={courseNotes.slice(0, COURSE_LIMIT)} />
+					<div class="cta-row reveal">
+						{courses.map((course) => (
+							<a class="pill pill--ghost" href={`/projects/${course.name}/`}>
+								All {course.name} notes ({course.count})
+							</a>
+						))}
+					</div>
+				</div>
+			</section>
+		)
+	}
 
 	{
 		projects.length > 0 && (
