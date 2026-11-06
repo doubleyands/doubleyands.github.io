@@ -1,0 +1,28 @@
+---
+import type { Entry } from '../data/cv';
+
+interface Props {
+	entries: Entry[];
+}
+
+const { entries } = Astro.props;
+---
+
+<ol class="cv-entries">
+	{
+		entries.map((entry) => (
+			<li>
+				<p class="cv-period caption">{entry.period}</p>
+				<h3 class="cv-title">{entry.url ? <a href={entry.url}>{entry.title}</a> : entry.title}</h3>
+				{entry.place && <p class="cv-place">{entry.place}</p>}
+				{entry.lines && entry.lines.length > 0 && (
+					<ul class="cv-lines">
+						{entry.lines.map((line) => (
+							<li>{line}</li>
+						))}
+					</ul>
+				)}
+			</li>
+		))
+	}
+</ol>

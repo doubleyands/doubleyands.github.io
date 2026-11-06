@@ -920,6 +920,10 @@ a {
 }
 
 .profile-link {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--sp-xs) var(--sp-xl);
 	margin-top: var(--sp-xxl);
 	font-size: 17px;
 }
@@ -927,6 +931,254 @@ a {
 .publications .byline {
 	margin-top: var(--sp-sm);
 	color: var(--muted-on-dark);
+}
+
+/* CV: read like a spec sheet. Section name on the left, entries on the right,
+   a hairline between sections. Black and gray only, links in the accent. */
+
+.cv-contact {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--sp-xs) var(--sp-lg);
+	margin-top: var(--sp-lg);
+}
+
+.cv-body {
+	padding-top: 0;
+}
+
+.cv-row {
+	display: grid;
+	grid-template-columns: 220px minmax(0, 1fr);
+	gap: var(--sp-xl);
+	padding: var(--sp-xl) 0;
+	border-top: 1px solid var(--hairline);
+}
+
+.cv-text {
+	color: var(--ink-80);
+}
+
+.cv-entries,
+.cv-pubs {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.cv-entries > li + li,
+.cv-pubs > li + li {
+	margin-top: var(--sp-lg);
+}
+
+.cv-period {
+	color: var(--ink-48);
+}
+
+.cv-title {
+	margin-top: 2px;
+	font-size: 17px;
+	font-weight: 600;
+	line-height: 1.35;
+}
+
+@media (hover: hover) {
+	.cv-title a:hover {
+		text-decoration: underline;
+	}
+}
+
+.cv-place {
+	color: var(--ink-80);
+}
+
+.cv-place strong {
+	font-weight: 600;
+	color: var(--ink);
+}
+
+.cv-venue {
+	color: var(--ink-48);
+}
+
+.cv-lines {
+	margin: var(--sp-xs) 0 0;
+	padding-left: 1.1em;
+	color: var(--ink-80);
+}
+
+.cv-lines li + li {
+	margin-top: 4px;
+}
+
+.cv-pub-group + .cv-pub-group {
+	margin-top: var(--sp-xl);
+}
+
+.cv-pub-group .cv-period {
+	margin-bottom: var(--sp-sm);
+}
+
+.cv-note {
+	margin-top: var(--sp-lg);
+	color: var(--ink-48);
+}
+
+.cv-skills {
+	display: grid;
+	grid-template-columns: 180px minmax(0, 1fr);
+	gap: var(--sp-sm) var(--sp-lg);
+	margin: 0;
+}
+
+.cv-skills dt {
+	font-weight: 600;
+}
+
+.cv-skills dd {
+	margin: 0;
+	color: var(--ink-80);
+}
+
+.cv-updated {
+	padding-top: var(--sp-xl);
+	border-top: 1px solid var(--hairline);
+	color: var(--ink-48);
+}
+
+@media (max-width: 734px) {
+	.cv-row {
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--sp-md);
+	}
+
+	.cv-skills {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 2px;
+	}
+
+	.cv-skills dd + dt {
+		margin-top: var(--sp-sm);
+	}
+}
+
+/* Printed or saved as PDF: only the CV, in black and gray, with the link addresses written out */
+@media print {
+	body:has(.cv-body) .global-nav,
+	body:has(.cv-body) .site-footer,
+	.cv-actions {
+		display: none;
+	}
+
+	.cv-head {
+		padding: 0 0 12px;
+	}
+
+	.cv-head .eyebrow {
+		margin-bottom: 2px;
+	}
+
+	.cv-head .hero-display {
+		font-size: 28px;
+	}
+
+	.cv-head .lead {
+		margin-top: 4px;
+		font-size: 15px;
+	}
+
+	.cv-contact {
+		gap: 2px var(--sp-lg);
+		margin-top: 8px;
+		font-size: 11px;
+	}
+
+	@page {
+		margin: 12mm 14mm;
+	}
+
+	/* On screen the page fills the window. On paper that adds an empty last page. */
+	body:has(.cv-body) {
+		display: block;
+		min-height: 0;
+	}
+
+	.cv-contact a[data-print]::after {
+		content: ': ' attr(data-print);
+	}
+
+	.cv-head a,
+	.cv-body a {
+		color: inherit;
+	}
+
+	.cv-body {
+		padding-bottom: 0;
+		font-size: 12px;
+		line-height: 1.35;
+	}
+
+	.cv-row {
+		grid-template-columns: 130px minmax(0, 1fr);
+		gap: 16px;
+		padding: 8px 0;
+	}
+
+	.cv-row .tagline {
+		font-size: 14px;
+		break-after: avoid;
+	}
+
+	.cv-title {
+		font-size: 12px;
+	}
+
+	.cv-period,
+	.cv-note,
+	.cv-updated {
+		font-size: 10px;
+	}
+
+	.cv-pub-group .cv-period {
+		margin-bottom: 4px;
+		break-after: avoid;
+	}
+
+	.cv-pub-group + .cv-pub-group {
+		margin-top: 12px;
+	}
+
+	.cv-lines {
+		margin-top: 2px;
+	}
+
+	.cv-lines li + li {
+		margin-top: 0;
+	}
+
+	.cv-entries > li,
+	.cv-pubs > li {
+		break-inside: avoid;
+	}
+
+	.cv-entries > li + li,
+	.cv-pubs > li + li {
+		margin-top: 8px;
+	}
+
+	.cv-note {
+		margin-top: 8px;
+	}
+
+	.cv-skills {
+		grid-template-columns: 120px minmax(0, 1fr);
+		gap: 2px 16px;
+	}
+
+	.cv-updated {
+		padding-top: 10px;
+	}
 }
 
 /* Chips */
