@@ -1,54 +1,15 @@
+// Who I am, in a few lines: the home page hero and the top of the CV page.
+// Education, publications, and the rest are in cv.ts.
 export const profile = {
 	name: 'Youngsoo Yang',
 	role: 'M.S. student in Computational Science and Engineering at Yonsei University.',
-	affiliation: 'Department of Computational Science and Engineering, Yonsei University',
 	intro: [
 		'I work on neural-network methods for solving partial differential equations.',
 		'This site is where I keep notes on my experiments.',
 	],
 	interests: [
-		{
-			name: 'Physics-Informed Neural Networks (PINNs)',
-			description: 'Neural networks trained to satisfy the governing equations of a physical system.',
-		},
-		{
-			name: 'Neural Operators',
-			description: 'Models that learn maps between function spaces, such as from the inputs of a PDE to its solution.',
-		},
-		{
-			name: 'Numerical Analysis',
-			description: 'The design and analysis of algorithms that solve mathematical problems numerically.',
-		},
-	],
-	education: [
-		{
-			degree: 'M.S. student in Computational Science and Engineering',
-			school: 'Yonsei University',
-			period: '2026 – present',
-			note: '',
-		},
-		{
-			degree: 'B.Eng. in Data Science and B.S. in Mathematics',
-			school: 'The Catholic University of Korea',
-			period: '2022 – 2026',
-			note: 'Primary major in Data Science, double major in Mathematics',
-		},
-	],
-	scholar: 'https://scholar.google.com/citations?user=PYyqO6AAAAAJ',
-	publications: [
-		{
-			title:
-				'Physics-Informed Perceiver IO: scalable mesh-free solving of partial differential equations without supervision',
-			authors: 'Y. Yang, E. Lee',
-			venue: 'Journal of Computational Physics, 569 (2027), 115455',
-			url: 'https://doi.org/10.1016/j.jcp.2026.115455',
-		},
-		{
-			title:
-				'A new strategy for physics-informed neural networks based on hierarchical collocation point refinement',
-			authors: 'M. Choi, D. Shin, Y. Yang, E. Lee',
-			venue: 'arXiv preprint, 2026',
-			url: 'https://arxiv.org/abs/2607.14665',
-		},
+		{ name: 'Physics-Informed Neural Networks (PINNs)' },
+		{ name: 'Neural Operators' },
+		{ name: 'Numerical Analysis' },
 	],
 };
