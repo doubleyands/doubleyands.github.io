@@ -67,8 +67,8 @@ export const cv = {
 			label: 'Read',
 		},
 		{
-			date: 'Sep 2026',
-			text: 'Physics-Informed Perceiver IO was accepted by the Journal of Computational Physics.',
+			date: 'Oct 2026',
+			text: 'Physics-Informed Perceiver IO was published in the Journal of Computational Physics.',
 			url: 'https://doi.org/10.1016/j.jcp.2026.115455',
 			label: 'Paper',
 		},
