@@ -1,6 +1,6 @@
-// Content of the CV page (/cv/), in the order the page shows it.
+// Content of the About page (/about/), in the order the page shows it.
 // Write short, simple sentences. Unpublished work stays out until it is public.
-// The About page has its own short list in profile.ts: update both when a paper changes.
+// The name and the short intro come from profile.ts.
 
 export interface Entry {
 	period: string;
@@ -20,57 +20,66 @@ export interface Publication {
 export const ME = 'Y. Yang';
 
 export const cv = {
-	updated: 'November 2026',
-	headline: 'M.S. student in Computational Science and Engineering, Yonsei University',
-	// Shown only when it is filled in
+	// The profile card on the left
+	position: ['M.S. student', 'Computational Science and Engineering', 'Yonsei University'],
 	email: 'youngsooyang@yonsei.ac.kr',
 	links: [
-		{ label: 'GitHub', url: 'https://github.com/doubleyands' },
-		{ label: 'Google Scholar', url: 'https://scholar.google.com/citations?user=PYyqO6AAAAAJ' },
-		{ label: 'ORCID', url: 'https://orcid.org/0009-0007-4676-120X' },
+		{ label: 'GitHub', icon: 'github', url: 'https://github.com/doubleyands' },
+		{ label: 'Google Scholar', icon: 'scholar', url: 'https://scholar.google.com/citations?user=PYyqO6AAAAAJ' },
+		{ label: 'ORCID', icon: 'orcid', url: 'https://orcid.org/0009-0007-4676-120X' },
 	],
+
+	// Each card opens the posts on that topic. The pictures are post thumbnails.
 	interests: [
-		'Physics-informed neural networks (PINNs)',
-		'Neural operators',
-		'Physics foundation models',
-		'Finite element methods',
-		'Numerical analysis',
+		{
+			name: 'Physics-informed neural networks',
+			description: 'Neural networks trained to satisfy the governing equations of a physical system.',
+			image: '/thumbnails/2026-11-06-pinn-01-decay.png',
+			url: '/projects/PINN/',
+		},
+		{
+			name: 'Neural operators',
+			description: 'Models that learn maps between function spaces, such as from the inputs of a PDE to its solution.',
+			image: '/thumbnails/2026-11-05-neural-operator-fno.png',
+			url: '/projects/NeuralOperator/',
+		},
+		{
+			name: 'Numerical analysis',
+			description: 'The design and analysis of algorithms that solve mathematical problems numerically.',
+			image: '/thumbnails/2026-10-03-numerical-analysis-week-1.png',
+			url: '/projects/numerical-analysis/',
+		},
 	],
+	moreInterests: 'Also: physics foundation models and finite element methods.',
 
-	education: [
+	// Newest first. Only things that are already public.
+	news: [
 		{
-			period: 'Sep 2026 – present',
-			title: 'M.S. in Computational Science and Engineering',
-			place: 'Yonsei University',
-			lines: ['Numerical Analysis Lab. Advisor: Prof. Eunjung Lee.'],
+			date: 'Nov 2026',
+			text: 'Started a series on this site: one PINN setup on 30 problems.',
+			url: '/projects/PINN/',
+			label: 'Posts',
 		},
 		{
-			period: 'Mar 2022 – Aug 2026',
-			title: 'B.Eng. in Data Science and B.S. in Mathematics',
-			place: 'The Catholic University of Korea',
-			lines: ['Primary major in Data Science, double major in Mathematics.'],
-		},
-	] as Entry[],
-
-	research: [
-		{
-			period: 'Sep 2026 – present',
-			title: 'Graduate Researcher',
-			place: 'Numerical Analysis Lab, Yonsei University',
-			lines: ['Neural network methods for PDEs: PINNs and neural operators.'],
+			date: 'Nov 2026',
+			text: 'New post: a Fourier neural operator for 3D capacitance.',
+			url: '/blog/2026-11-05-neural-operator-fno/',
+			label: 'Read',
 		},
 		{
-			period: 'Jan 2025 – Aug 2026',
-			title: 'Undergraduate Research Intern',
-			place: 'Numerical Analysis Lab, Yonsei University',
-			lines: [
-				'Proposed Physics-Informed Perceiver IO (PIP-IO). It solves PDEs without labeled data and without a mesh. Published as first author in the Journal of Computational Physics.',
-				'Cut the attention cost of Transformer-based PINNs from O(N²) to O(mN) with latent cross-attention.',
-				'Compared PIP-IO with baselines in a fair way: the same number of parameters and the same input embedding. Reported the error of the final model, not the best error during training.',
-				'Co-developed a physics-informed Transformer with slope limiter embedding for PDEs with sharp transitions (under revision).',
-			],
+			date: 'Sep 2026',
+			text: 'Physics-Informed Perceiver IO was accepted by the Journal of Computational Physics.',
+			url: 'https://doi.org/10.1016/j.jcp.2026.115455',
+			label: 'Paper',
 		},
-	] as Entry[],
+		{ date: 'Sep 2026', text: 'Started my M.S. at Yonsei University.', url: '', label: '' },
+		{
+			date: 'Jul 2026',
+			text: 'Preprint on arXiv: hierarchical collocation point refinement for PINNs.',
+			url: 'https://arxiv.org/abs/2607.14665',
+			label: 'arXiv',
+		},
+	],
 
 	publications: [
 		{
@@ -110,6 +119,26 @@ export const cv = {
 		},
 	] as { heading: string; items: Publication[] }[],
 
+	research: [
+		{
+			period: 'Sep 2026 – present',
+			title: 'Graduate Researcher',
+			place: 'Numerical Analysis Lab, Yonsei University',
+			lines: ['Neural network methods for PDEs: PINNs and neural operators.'],
+		},
+		{
+			period: 'Jan 2025 – Aug 2026',
+			title: 'Undergraduate Research Intern',
+			place: 'Numerical Analysis Lab, Yonsei University',
+			lines: [
+				'Proposed Physics-Informed Perceiver IO (PIP-IO). It solves PDEs without labeled data and without a mesh. Published as first author in the Journal of Computational Physics.',
+				'Cut the attention cost of Transformer-based PINNs from O(N²) to O(mN) with latent cross-attention.',
+				'Compared PIP-IO with baselines in a fair way: the same number of parameters and the same input embedding. Reported the error of the final model, not the best error during training.',
+				'Co-developed a physics-informed Transformer with slope limiter embedding for PDEs with sharp transitions (under revision).',
+			],
+		},
+	] as Entry[],
+
 	projects: [
 		{
 			period: 'Nov 2026 – present',
@@ -136,7 +165,7 @@ export const cv = {
 			title: 'This website',
 			url: '/',
 			lines: [
-				'Built with Astro. The home page plays a flow simulation (lattice Boltzmann) as you scroll. The About page shows a PINN while it learns.',
+				'Built with Astro. The home page plays a flow simulation (lattice Boltzmann) as you scroll.',
 				'Weekly notes on numerical analysis and numerical PDEs.',
 			],
 		},
@@ -149,6 +178,21 @@ export const cv = {
 				'Got stable solutions where plain PINNs did not converge. Checked the results with ANSYS.',
 				'Lower relative L2 error than plain PINNs, SA-PINNs, and NTK-weighted PINNs.',
 			],
+		},
+	] as Entry[],
+
+	education: [
+		{
+			period: 'Sep 2026 – present',
+			title: 'M.S. in Computational Science and Engineering',
+			place: 'Yonsei University',
+			lines: ['Numerical Analysis Lab. Advisor: Prof. Eunjung Lee.'],
+		},
+		{
+			period: 'Mar 2022 – Aug 2026',
+			title: 'B.Eng. in Data Science and B.S. in Mathematics',
+			place: 'The Catholic University of Korea',
+			lines: ['Primary major in Data Science, double major in Mathematics.'],
 		},
 	] as Entry[],
 

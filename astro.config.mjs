@@ -10,6 +10,10 @@ import remarkMath from 'remark-math';
 export default defineConfig({
 	site: 'https://doubleyands.github.io',
 	integrations: [sitemap()],
+	// CV 페이지는 About으로 합쳤다 (2026-11-06). 잠깐 있던 /cv/ 링크는 About으로 보낸다.
+	redirects: {
+		'/cv': '/about/',
+	},
 	markdown: {
 		// 수식을 빌드할 때 KaTeX로 그린다
 		processor: unified({

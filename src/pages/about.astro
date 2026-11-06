@@ -1,84 +1,180 @@
 ---
-import PinnTraining from '../components/PinnTraining.astro';
+import CvEntries from '../components/CvEntries.astro';
+import { cv, ME } from '../data/cv';
 import { profile } from '../data/profile';
 import Base from '../layouts/Base.astro';
+
+const isMe = (author: string) => author.replace('*', '') === ME;
 ---
 
 <Base title="About" description={`${profile.name}. ${profile.role}`}>
-	<section class="tile tile--center">
-		<div class="container">
-			<h1 class="hero-display">{profile.name}</h1>
-			<p class="lead">{profile.affiliation}</p>
-			<p class="intro">{profile.intro.join(' ')}</p>
-		</div>
-	</section>
+	<section class="tile tile--parchment about">
+		<div class="container about__grid">
+			<aside class="about-card">
+				<h1 class="about-card__name">{profile.name}</h1>
+				<p class="about-card__position">
+					{cv.position.map((line) => <span>{line}</span>)}
+				</p>
+				<ul class="about-card__links">
+					<li>
+						<a href={`mailto:${cv.email}`}>
+							<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+								<rect x="1.5" y="3" width="13" height="10" rx="1.5"></rect>
+								<path d="M2 4.5 8 9l6-4.5"></path>
+							</svg>
+							{cv.email}
+						</a>
+					</li>
+					{
+						cv.links.map((link) => (
+							<li>
+								<a href={link.url}>
+									{link.icon === 'github' && (
+										<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+											<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+										</svg>
+									)}
+									{link.icon === 'scholar' && (
+										<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+											<path d="M8 2 .5 6 8 10l7.5-4L8 2Z" />
+											<path d="M3.5 7.9V11c0 1.1 2 2.3 4.5 2.3s4.5-1.2 4.5-2.3V7.9L8 10.3 3.5 7.9Z" />
+										</svg>
+									)}
+									{link.icon === 'orcid' && (
+										<svg viewBox="0 0 16 16" aria-hidden="true">
+											<circle cx="8" cy="8" r="7.5" fill="currentColor" />
+											<rect x="4.6" y="6.7" width="1.2" height="5" fill="#fff" />
+											<circle cx="5.2" cy="4.9" r=".75" fill="#fff" />
+											<path
+												d="M7.3 6.7h1.9c1.6 0 2.6 1.1 2.6 2.5s-1 2.5-2.6 2.5H7.3V6.7Zm1.2 1.05v2.9h.7c.9 0 1.4-.6 1.4-1.45s-.5-1.45-1.4-1.45h-.7Z"
+												fill="#fff"
+											/>
+										</svg>
+									)}
+									{link.label}
+								</a>
+							</li>
+						))
+					}
+				</ul>
+			</aside>
 
-	<PinnTraining />
+			<div class="about__main">
+				<section class="about-section reveal">
+					<h2>About</h2>
+					<p class="about-text">{profile.intro.join(' ')}</p>
+				</section>
 
-	<section class="tile tile--parchment">
-		<div class="container">
-			<div class="tile-head reveal">
-				<h2 class="display-lg">Research interests</h2>
-			</div>
-			<ul class="card-grid">
-				{
-					profile.interests.map((interest) => (
-						<li class="reveal">
-							<div class="card">
-								<h3 class="tagline">{interest.name}</h3>
-								<p class="description">{interest.description}</p>
+				<section class="about-section reveal">
+					<h2>Research interests</h2>
+					<ul class="interest-grid">
+						{
+							cv.interests.map((interest) => (
+								<li>
+									<a class="interest" href={interest.url}>
+										<img src={interest.image} width="1200" height="630" alt="" loading="lazy" decoding="async" />
+										<div class="interest__body">
+											<h3>{interest.name}</h3>
+											<p>{interest.description}</p>
+										</div>
+									</a>
+								</li>
+							))
+						}
+					</ul>
+					<p class="interest-more caption">{cv.moreInterests}</p>
+				</section>
+
+				<section class="about-section reveal">
+					<h2>News</h2>
+					<ul class="news">
+						{
+							cv.news.map((item) => (
+								<li>
+									<span class="news__date caption-strong">{item.date}</span>
+									<span class="news__text">
+										{item.text}
+										{item.url && <a href={item.url}>{item.label} &rsaquo;</a>}
+									</span>
+								</li>
+							))
+						}
+					</ul>
+				</section>
+
+				<section class="about-section reveal">
+					<h2>Publications</h2>
+					{
+						cv.publications.map((group) => (
+							<div class="cv-pub-group">
+								<h3 class="cv-period caption-strong">{group.heading}</h3>
+								<ol class="cv-pubs">
+									{group.items.map((publication) => (
+										<li>
+											<p class="cv-title">
+												{publication.url ? (
+													<a href={publication.url}>{publication.title}</a>
+												) : (
+													publication.title
+												)}
+											</p>
+											<p class="cv-place">
+												{publication.authors.map((author, i) => (
+													<>
+														{i > 0 && ', '}
+														{isMe(author) ? <strong>{author}</strong> : author}
+													</>
+												))}
+											</p>
+											<p class="cv-venue">{publication.venue}</p>
+										</li>
+									))}
+								</ol>
 							</div>
-						</li>
-					))
-				}
-			</ul>
-		</div>
-	</section>
+						))
+					}
+					<p class="cv-note caption">* Corresponding author.</p>
+				</section>
 
-	<section class="tile tile--center">
-		<div class="container">
-			<div class="tile-head reveal">
-				<h2 class="display-lg">Education</h2>
-			</div>
-			<ul class="education">
-				{
-					profile.education.map((entry) => (
-						<li class="reveal">
-							<h3 class="tagline">{entry.degree}</h3>
-							<p class="school">
-								{entry.school} · {entry.period}
-							</p>
-							{entry.note && <p class="note caption">{entry.note}</p>}
-						</li>
-					))
-				}
-			</ul>
-		</div>
-	</section>
+				<section class="about-section reveal">
+					<h2>Research experience</h2>
+					<CvEntries entries={cv.research} />
+				</section>
 
-	<section class="tile tile--dark tile--center">
-		<div class="container">
-			<div class="tile-head reveal">
-				<h2 class="display-lg">{profile.publications.length === 1 ? 'Publication' : 'Publications'}</h2>
+				<section class="about-section reveal">
+					<h2>Projects</h2>
+					<CvEntries entries={cv.projects} />
+				</section>
+
+				<section class="about-section reveal">
+					<h2>Education</h2>
+					<CvEntries entries={cv.education} />
+				</section>
+
+				<section class="about-section reveal">
+					<h2>Awards</h2>
+					<CvEntries entries={cv.awards} />
+				</section>
+
+				<section class="about-section reveal">
+					<h2>Skills</h2>
+					<dl class="cv-skills">
+						{
+							cv.skills.map((skill) => (
+								<>
+									<dt>{skill.label}</dt>
+									<dd>{skill.value}</dd>
+								</>
+							))
+						}
+					</dl>
+				</section>
+
+				<section class="about-section reveal">
+					<h2>Military service</h2>
+					<CvEntries entries={cv.military} />
+				</section>
 			</div>
-			<ul class="publications">
-				{
-					profile.publications.map((publication) => (
-						<li class="reveal">
-							<h3 class="tagline">
-								<a href={publication.url}>{publication.title}</a>
-							</h3>
-							<p class="byline caption">
-								{publication.authors} · {publication.venue}
-							</p>
-						</li>
-					))
-				}
-			</ul>
-			<p class="profile-link reveal">
-				<a href={profile.scholar}>Google Scholar profile &rsaquo;</a>
-				<a href="/cv/">Full CV &rsaquo;</a>
-			</p>
 		</div>
 	</section>
 </Base>
