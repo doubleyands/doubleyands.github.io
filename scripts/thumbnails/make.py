@@ -446,6 +446,30 @@ def pinn_decay():
     return svg(*parts)
 
 
+def rk4_region():
+    """Week 6: the region of absolute stability of RK4, |P(z)| <= 1 with P(z) = 1 + z + z^2/2 + z^3/6 + z^4/24 (blue),
+    and the smaller forward Euler disk (gray dashes) in the complex z plane."""
+    P = mapper(-6.8, 4.6, -3.1, 3.1, 150, 1050, 70, 560)  # same scale on both axes, so the disk stays round
+    p4 = lambda z: abs(1 + z + z * z / 2 + z ** 3 / 6 + z ** 4 / 24)
+    boundary = []
+    for k in range(721):  # march out from z = -1 along each ray to the first crossing |P| = 1
+        phi = 2 * math.pi * k / 720
+        d = complex(math.cos(phi), math.sin(phi))
+        rho = 0.0
+        while p4(-1 + (rho + 0.002) * d) <= 1:
+            rho += 0.002
+        z = -1 + rho * d
+        boundary.append(P(z.real, z.imag))
+    parts = [line(*P(-4.6, 0), *P(2.4, 0), GRAY, 4)]
+    parts.append(line(*P(0, -3.1), *P(0, 3.1), GRAY, 4))
+    d = "M" + " L".join(f"{x:.1f},{y:.1f}" for x, y in boundary) + " Z"
+    parts.append(f'<path d="{d}" fill="{BLUE}" fill-opacity="0.12" stroke="{BLUE}" stroke-width="6" stroke-linejoin="round"/>')
+    disk = [P(-1 + math.cos(t), math.sin(t)) for t in (2 * math.pi * k / 240 for k in range(241))]
+    parts.append(polyline(disk, GRAY, 5, dash="14 12"))
+    parts.append(dot(*P(0, 0), r=12))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -464,6 +488,7 @@ DRAWINGS = {
     "2026-11-05-numerical-pde-lecture-10": grid_eigenvectors,
     "2026-11-05-neural-operator-fno": conductors_in_box,
     "2026-11-06-pinn-01-decay": pinn_decay,
+    "2026-11-07-numerical-analysis-week-6": rk4_region,
 }
 
 
