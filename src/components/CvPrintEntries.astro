@@ -1,0 +1,40 @@
+---
+// One CV section's entries in the printed CV (cv-print.astro): title and period
+// on one line, then the place, the page address, and short lines.
+import type { Entry } from '../data/cv';
+
+interface Props {
+	entries: Entry[];
+}
+
+const { entries } = Astro.props;
+const site = Astro.site!;
+const abs = (url: string) => new URL(url, site).href;
+const bare = (url: string) => abs(url).replace(/^https?:\/\//, '').replace(/\/$/, '');
+---
+
+<div class="entries">
+	{
+		entries.map((entry) => (
+			<div class="entry">
+				<div class="entry__head">
+					<h3 class="entry__title">{entry.url ? <a href={abs(entry.url)}>{entry.title}</a> : entry.title}</h3>
+					<span class="entry__period">{entry.period}</span>
+				</div>
+				{entry.place && <p class="entry__place">{entry.place}</p>}
+				{entry.url && (
+					<p class="entry__url">
+						<a href={abs(entry.url)}>{bare(entry.url)}</a>
+					</p>
+				)}
+				{entry.lines && entry.lines.length > 0 && (
+					<ul class="entry__lines">
+						{entry.lines.map((line) => (
+							<li>{line}</li>
+						))}
+					</ul>
+				)}
+			</div>
+		))
+	}
+</div>

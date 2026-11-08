@@ -1,6 +1,9 @@
 // Content of the About page (/about/), in the order the page shows it.
 // Write short, simple sentences. Unpublished work stays out until it is public.
 // The name and the short intro come from profile.ts.
+// The downloadable CV (/cv.pdf) is printed from this file at deploy time
+// (src/pages/cv-print.astro, scripts/cv/pdf.mjs). It shows everything here except
+// the News and the intro.
 
 export interface Entry {
 	period: string;
