@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "cv:pdf": "node scripts/cv/pdf.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "prepare": "git config core.hooksPath .githooks"

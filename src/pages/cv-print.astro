@@ -1,0 +1,354 @@
+---
+// The CV as a printable A4 document, in black and gray.
+// scripts/cv/pdf.mjs prints this page to /cv.pdf after the build and then removes
+// the page from dist, so only the PDF is published. The About page links to it.
+// The content comes from cv.ts and profile.ts, so the PDF follows the About page.
+import CvPrintEntries from '../components/CvPrintEntries.astro';
+import { cv, ME } from '../data/cv';
+import { profile } from '../data/profile';
+
+const site = Astro.site!;
+const bare = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+const isMe = (author: string) => author.replace('*', '') === ME;
+const updated = new Date().toLocaleDateString('en-US', {
+	month: 'long',
+	year: 'numeric',
+	timeZone: 'Asia/Seoul',
+});
+
+// Two lines: email and this site, then the profile links.
+// Short addresses are written out. Long ones (Google Scholar) show the label.
+const contactLines = [
+	[
+		{ text: cv.email, url: `mailto:${cv.email}` },
+		{ text: bare(site.href), url: site.href },
+	],
+	cv.links.map((link) => ({
+		text: bare(link.url).length <= 32 ? bare(link.url) : link.label,
+		url: link.url,
+	})),
+];
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<meta name="robots" content="noindex" />
+		<title>{profile.name} — CV</title>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+		/>
+		<style is:global>
+			@page {
+				size: A4;
+				margin: 16mm 18mm;
+			}
+
+			:root {
+				--ink: #1d1d1f;
+				--ink-80: #424245;
+				--ink-48: #6e6e73;
+				--rule: #d2d2d7;
+			}
+
+			html {
+				color: var(--ink);
+				font-family:
+					'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI',
+					sans-serif;
+				font-size: 9.5pt;
+				line-height: 1.42;
+				-webkit-text-size-adjust: 100%;
+			}
+
+			body {
+				margin: 0;
+				background: #fff;
+			}
+
+			/* On screen, show the page like a sheet of A4 paper */
+			@media screen {
+				body {
+					box-sizing: border-box;
+					max-width: 210mm;
+					margin: 0 auto;
+					padding: 16mm 18mm;
+				}
+			}
+
+			h1,
+			h2,
+			h3,
+			p,
+			ul,
+			ol,
+			dl {
+				margin: 0;
+			}
+
+			a {
+				color: inherit;
+				text-decoration: none;
+			}
+
+			.head {
+				padding-bottom: 10pt;
+			}
+
+			.head h1 {
+				font-size: 20pt;
+				font-weight: 700;
+				letter-spacing: -0.01em;
+				line-height: 1.2;
+			}
+
+			.position {
+				margin-top: 2pt;
+				color: var(--ink-80);
+				font-size: 10.5pt;
+			}
+
+			.contact {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0 8pt;
+				margin-top: 1pt;
+				padding: 0;
+				color: var(--ink-80);
+				font-size: 9pt;
+				list-style: none;
+			}
+
+			.position + .contact {
+				margin-top: 6pt;
+			}
+
+			.contact li + li::before {
+				content: '·';
+				margin-right: 8pt;
+				color: var(--ink-48);
+			}
+
+			.row {
+				display: grid;
+				grid-template-columns: 30mm minmax(0, 1fr);
+				gap: 0 6mm;
+				padding: 8pt 0;
+				border-top: 0.5pt solid var(--rule);
+			}
+
+			.row h2 {
+				font-size: 9.5pt;
+				font-weight: 600;
+				line-height: 1.42;
+			}
+
+			.muted {
+				color: var(--ink-48);
+			}
+
+			.entry,
+			.pub {
+				break-inside: avoid;
+			}
+
+			.entry + .entry,
+			.pub + .pub {
+				margin-top: 6pt;
+			}
+
+			.entry__head {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 10pt;
+			}
+
+			.entry__title,
+			.pub__title {
+				font-size: 9.5pt;
+				font-weight: 600;
+			}
+
+			.entry__period {
+				flex: none;
+				color: var(--ink-48);
+				font-size: 8.5pt;
+				font-variant-numeric: tabular-nums;
+			}
+
+			.entry__place,
+			.pub__authors {
+				color: var(--ink-80);
+			}
+
+			.pub__authors strong {
+				color: var(--ink);
+				font-weight: 600;
+			}
+
+			.entry__url,
+			.pub__venue {
+				color: var(--ink-48);
+				font-size: 8.5pt;
+			}
+
+			.entry__lines {
+				margin-top: 2pt;
+				padding-left: 1.1em;
+				color: var(--ink-80);
+			}
+
+			.entry__lines li + li {
+				margin-top: 1pt;
+			}
+
+			.pub-group + .pub-group {
+				margin-top: 8pt;
+			}
+
+			.pub-group h3 {
+				margin-bottom: 3pt;
+				color: var(--ink-48);
+				font-size: 8.5pt;
+				font-weight: 600;
+				break-after: avoid;
+			}
+
+			.note {
+				margin-top: 6pt;
+				color: var(--ink-48);
+				font-size: 8.5pt;
+			}
+
+			.skills {
+				display: grid;
+				grid-template-columns: 34mm minmax(0, 1fr);
+				gap: 2pt 4mm;
+			}
+
+			.skills dt {
+				font-weight: 600;
+			}
+
+			.skills dd {
+				margin: 0;
+				color: var(--ink-80);
+			}
+
+			.updated {
+				padding-top: 8pt;
+				border-top: 0.5pt solid var(--rule);
+				color: var(--ink-48);
+				font-size: 8pt;
+			}
+		</style>
+	</head>
+	<body>
+		<header class="head">
+			<h1>{profile.name}</h1>
+			<p class="position">{cv.position.join(', ')}</p>
+			{
+				contactLines.map((line) => (
+					<ul class="contact">
+						{line.map((contact) => (
+							<li>
+								<a href={contact.url}>{contact.text}</a>
+							</li>
+						))}
+					</ul>
+				))
+			}
+		</header>
+
+		<section class="row">
+			<h2>Research interests</h2>
+			<div>
+				<p>{cv.interests.map((interest) => interest.name).join(' · ')}</p>
+				<p class="muted">{cv.moreInterests}</p>
+			</div>
+		</section>
+
+		<section class="row">
+			<h2>Education</h2>
+			<CvPrintEntries entries={cv.education} />
+		</section>
+
+		<section class="row">
+			<h2>Research experience</h2>
+			<CvPrintEntries entries={cv.research} />
+		</section>
+
+		<section class="row">
+			<h2>Publications</h2>
+			<div>
+				{
+					cv.publications.map((group) => (
+						<div class="pub-group">
+							<h3>{group.heading}</h3>
+							{group.items.map((publication) => (
+								<div class="pub">
+									<p class="pub__title">
+										{publication.url ? <a href={publication.url}>{publication.title}</a> : publication.title}
+									</p>
+									<p class="pub__authors">
+										{publication.authors.map((author, i) => (
+											<>
+												{i > 0 && ', '}
+												{isMe(author) ? <strong>{author}</strong> : author}
+											</>
+										))}
+									</p>
+									<p class="pub__venue">
+										{publication.venue}
+										{publication.url?.includes('doi.org') && (
+											<>
+												{' · '}
+												<a href={publication.url}>{bare(publication.url)}</a>
+											</>
+										)}
+									</p>
+								</div>
+							))}
+						</div>
+					))
+				}
+				<p class="note">* Corresponding author.</p>
+			</div>
+		</section>
+
+		<section class="row">
+			<h2>Projects</h2>
+			<CvPrintEntries entries={cv.projects} />
+		</section>
+
+		<section class="row">
+			<h2>Awards</h2>
+			<CvPrintEntries entries={cv.awards} />
+		</section>
+
+		<section class="row">
+			<h2>Skills</h2>
+			<dl class="skills">
+				{
+					cv.skills.map((skill) => (
+						<>
+							<dt>{skill.label}</dt>
+							<dd>{skill.value}</dd>
+						</>
+					))
+				}
+			</dl>
+		</section>
+
+		<section class="row">
+			<h2>Military service</h2>
+			<CvPrintEntries entries={cv.military} />
+		</section>
+
+		<p class="updated">Updated {updated}. The latest version is at {bare(site.href)}/about/.</p>
+	</body>
+</html>
