@@ -446,6 +446,20 @@ def pinn_decay():
     return svg(*parts)
 
 
+def pinn_poisson_1d():
+    """PINN Problem 2: the two-scale solution sin(2 pi x) + 0.1 sin(10 pi x) (black), its slow part (gray dashes),
+    the residual points on the x axis (blue) and the two boundary values u(0) = u(1) = 0."""
+    P = mapper(0, 1, -1.25, 1.25, 150, 1050, 70, 560)
+    u = lambda x: math.sin(2 * math.pi * x) + 0.1 * math.sin(10 * math.pi * x)
+    parts = [line(*P(0, 0), *P(1, 0), GRAY, 4)]
+    parts.append(polyline([P(k / 400, math.sin(2 * math.pi * k / 400)) for k in range(401)], GRAY, 5, dash="14 12"))
+    parts.append(polyline([P(k / 400, u(k / 400)) for k in range(401)], INK, 6))
+    for k in range(24):
+        parts.append(dot(*P((k + 0.5) / 24, 0), r=7, fill=BLUE, stroke=BG, width=3))
+    parts += [dot(*P(0, 0), r=14), dot(*P(1, 0), r=14)]
+    return svg(*parts)
+
+
 def rk4_region():
     """Week 6: the region of absolute stability of RK4, |P(z)| <= 1 with P(z) = 1 + z + z^2/2 + z^3/6 + z^4/24 (blue),
     and the smaller forward Euler disk (gray dashes) in the complex z plane."""
@@ -489,6 +503,7 @@ DRAWINGS = {
     "2026-11-05-neural-operator-fno": conductors_in_box,
     "2026-11-06-pinn-01-decay": pinn_decay,
     "2026-11-07-numerical-analysis-week-6": rk4_region,
+    "2026-11-09-pinn-02-poisson-1d": pinn_poisson_1d,
 }
 
 
