@@ -484,6 +484,25 @@ def rk4_region():
     return svg(*parts)
 
 
+def amplified_mode():
+    """Lecture 11: von Neumann analysis. One Fourier mode on the grid at step n (black) and after one step (blue),
+    the same shape multiplied by the amplification factor g. Gray ticks mark the grid points."""
+    n = 16
+    P = mapper(-0.02, 1.02, -1.2, 1.2, 150, 1050, 70, 560)
+    g = 0.55
+    wave = lambda x: math.cos(4 * math.pi * x)
+    parts = [line(*P(0, 0), *P(1, 0), GRAY, 4)]
+    for j in range(n + 1):
+        parts.append(line(*P(j / n, -0.06), *P(j / n, 0.06), GRAY, 4))
+    parts.append(polyline([P(x, y) for x, y in sample(wave, 0, 1, 300)], INK, 6))
+    parts.append(polyline([P(x, g * y) for x, y in sample(wave, 0, 1, 300)], BLUE, 5))
+    for j in range(n + 1):
+        x = j / n
+        parts.append(dot(*P(x, wave(x)), r=9))
+        parts.append(dot(*P(x, g * wave(x)), r=9, fill=BLUE))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -504,6 +523,7 @@ DRAWINGS = {
     "2026-11-06-pinn-01-decay": pinn_decay,
     "2026-11-07-numerical-analysis-week-6": rk4_region,
     "2026-11-09-pinn-02-poisson-1d": pinn_poisson_1d,
+    "2026-11-10-numerical-pde-lecture-11": amplified_mode,
 }
 
 
