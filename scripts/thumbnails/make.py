@@ -460,6 +460,22 @@ def pinn_poisson_1d():
     return svg(*parts)
 
 
+def pinn_oscillator():
+    """PINN Problem 3: the damped oscillation exp(-2t)(cos wt + 2/w sin wt) (black) inside its envelope
+    +-exp(-2t) (gray dashes), the residual points on the t axis (blue) and the initial value u(0) = 1."""
+    P = mapper(0, 1, -1.15, 1.15, 150, 1050, 70, 560)
+    w = math.sqrt(396)
+    u = lambda t: math.exp(-2 * t) * (math.cos(w * t) + 2 / w * math.sin(w * t))
+    parts = [line(*P(0, 0), *P(1, 0), GRAY, 4)]
+    for sign in (1, -1):
+        parts.append(polyline([P(k / 400, sign * math.exp(-2 * k / 400)) for k in range(401)], GRAY, 5, dash="14 12"))
+    parts.append(polyline([P(k / 600, u(k / 600)) for k in range(601)], INK, 6))
+    for k in range(24):
+        parts.append(dot(*P((k + 0.5) / 24, 0), r=7, fill=BLUE, stroke=BG, width=3))
+    parts.append(dot(*P(0, 1), r=14))
+    return svg(*parts)
+
+
 def rk4_region():
     """Week 6: the region of absolute stability of RK4, |P(z)| <= 1 with P(z) = 1 + z + z^2/2 + z^3/6 + z^4/24 (blue),
     and the smaller forward Euler disk (gray dashes) in the complex z plane."""
@@ -524,6 +540,7 @@ DRAWINGS = {
     "2026-11-07-numerical-analysis-week-6": rk4_region,
     "2026-11-09-pinn-02-poisson-1d": pinn_poisson_1d,
     "2026-11-10-numerical-pde-lecture-11": amplified_mode,
+    "2026-11-11-pinn-03-oscillator": pinn_oscillator,
 }
 
 
