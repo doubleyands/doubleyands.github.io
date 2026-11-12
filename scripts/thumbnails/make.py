@@ -519,6 +519,28 @@ def amplified_mode():
     return svg(*parts)
 
 
+def pushed_ellipse():
+    """Lecture 12: artificial diffusion. The eigenvalues of the central advection matrix sit on the imaginary axis (gray),
+    outside the Forward Euler disk (black) except at 0. Diffusion pushes them left onto an ellipse inside the disk (blue)."""
+    P = mapper(-2.25, 0.55, -1.12, 1.12, 260, 940, 60, 570)
+    nu, c = 0.85, 0.85
+    parts = [line(*P(-2.25, 0), *P(0.55, 0), GRAY, 4), line(*P(0, -1.12), *P(0, 1.12), GRAY, 4)]
+    parts.append(polyline([P(-1 + math.cos(t), math.sin(t)) for t in [2 * math.pi * i / 240 for i in range(241)]], INK, 6))
+    parts.append(polyline([P(-c + c * math.cos(t), -nu * math.sin(t)) for t in [2 * math.pi * i / 240 for i in range(241)]], BLUE, 5))
+    m = 8
+    pts = []
+    for p in range(m):
+        th = 2 * math.pi * p / m
+        pts.append((-c + c * math.cos(th), -nu * math.sin(th), math.cos(th)))
+    for x, y, cs in pts:
+        if cs < 0.01:  # one arrow per height, to the far point of the ellipse
+            parts.append(arrow(*P(-0.06, y), *P(x + 0.08, y), GRAY, 4, 16))
+    for x, y, _ in pts:
+        parts.append(dot(*P(0, y), r=10, fill=GRAY))
+        parts.append(dot(*P(x, y), r=10, fill=BLUE))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -541,6 +563,7 @@ DRAWINGS = {
     "2026-11-09-pinn-02-poisson-1d": pinn_poisson_1d,
     "2026-11-10-numerical-pde-lecture-11": amplified_mode,
     "2026-11-11-pinn-03-oscillator": pinn_oscillator,
+    "2026-11-12-numerical-pde-lecture-12": pushed_ellipse,
 }
 
 
