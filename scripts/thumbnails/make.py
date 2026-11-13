@@ -476,6 +476,22 @@ def pinn_oscillator():
     return svg(*parts)
 
 
+def pinn_boundary_layer():
+    """PINN Problem 4: the solution of -0.01 u'' + u' = 1 (black), the line u = x it follows (gray dashes),
+    the residual points on the x axis (blue) and the two boundary values u(0) = u(1) = 0."""
+    P = mapper(0, 1, -0.08, 1.08, 150, 1050, 70, 560)
+    eps = 0.04  # wider than the post's 0.01 so the layer is visible at thumbnail size
+    u = lambda x: x - (math.exp((x - 1) / eps) - math.exp(-1 / eps)) / (1 - math.exp(-1 / eps))
+    parts = [line(*P(0, 0), *P(1, 0), GRAY, 4)]
+    parts.append(polyline([P(0, 0), P(1, 1)], GRAY, 5, dash="14 12"))
+    parts.append(polyline([P(k / 800, u(k / 800)) for k in range(801)], INK, 6))
+    for k in range(24):
+        parts.append(dot(*P((k + 0.5) / 24, 0), r=7, fill=BLUE, stroke=BG, width=3))
+    parts.append(dot(*P(0, 0), r=14))
+    parts.append(dot(*P(1, 0), r=14))
+    return svg(*parts)
+
+
 def rk4_region():
     """Week 6: the region of absolute stability of RK4, |P(z)| <= 1 with P(z) = 1 + z + z^2/2 + z^3/6 + z^4/24 (blue),
     and the smaller forward Euler disk (gray dashes) in the complex z plane."""
@@ -564,6 +580,7 @@ DRAWINGS = {
     "2026-11-10-numerical-pde-lecture-11": amplified_mode,
     "2026-11-11-pinn-03-oscillator": pinn_oscillator,
     "2026-11-12-numerical-pde-lecture-12": pushed_ellipse,
+    "2026-11-13-pinn-04-boundary-layer": pinn_boundary_layer,
 }
 
 
