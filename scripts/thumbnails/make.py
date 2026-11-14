@@ -557,6 +557,37 @@ def pushed_ellipse():
     return svg(*parts)
 
 
+def lu_factors():
+    """Week 7: LU decomposition. A lower triangular block (blue) times an upper triangular block (black)
+    gives a full square (gray grid). The x and = signs are drawn with lines, no text."""
+    size, top = 260, 185
+    xs = [110, 470, 830]
+    parts = []
+    # L: lower triangle filled
+    x = xs[0]
+    parts.append(f'<rect x="{x}" y="{top}" width="{size}" height="{size}" fill="none" stroke="{GRAY}" stroke-width="4"/>')
+    parts.append(f'<path d="M{x},{top} L{x},{top + size} L{x + size},{top + size} Z" fill="{BLUE}" fill-opacity="0.15" stroke="{BLUE}" stroke-width="6" stroke-linejoin="round"/>')
+    # U: upper triangle filled
+    x = xs[1]
+    parts.append(f'<rect x="{x}" y="{top}" width="{size}" height="{size}" fill="none" stroke="{GRAY}" stroke-width="4"/>')
+    parts.append(f'<path d="M{x},{top} L{x + size},{top} L{x + size},{top + size} Z" fill="{INK}" fill-opacity="0.08" stroke="{INK}" stroke-width="6" stroke-linejoin="round"/>')
+    # A: full square with a grid of entries
+    x = xs[2]
+    for k in range(1, 4):
+        t = size * k / 4
+        parts.append(line(x + t, top, x + t, top + size, FAINT, 3))
+        parts.append(line(x, top + t, x + size, top + t, FAINT, 3))
+    parts.append(f'<rect x="{x}" y="{top}" width="{size}" height="{size}" fill="none" stroke="{INK}" stroke-width="6"/>')
+    # x between L and U, = between U and A
+    cx, cy, r = (xs[0] + size + xs[1]) / 2, top + size / 2, 26
+    parts.append(line(cx - r, cy - r, cx + r, cy + r, INK, 6))
+    parts.append(line(cx - r, cy + r, cx + r, cy - r, INK, 6))
+    cx = (xs[1] + size + xs[2]) / 2
+    parts.append(line(cx - 32, cy - 14, cx + 32, cy - 14, INK, 6))
+    parts.append(line(cx - 32, cy + 14, cx + 32, cy + 14, INK, 6))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -581,6 +612,7 @@ DRAWINGS = {
     "2026-11-11-pinn-03-oscillator": pinn_oscillator,
     "2026-11-12-numerical-pde-lecture-12": pushed_ellipse,
     "2026-11-13-pinn-04-boundary-layer": pinn_boundary_layer,
+    "2026-11-14-numerical-analysis-week-7": lu_factors,
 }
 
 
