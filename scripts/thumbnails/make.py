@@ -492,6 +492,22 @@ def pinn_boundary_layer():
     return svg(*parts)
 
 
+def pinn_heat():
+    """PINN Problem 5: the heat equation u_t = 0.1 u_xx. The start sin(pi x) + 0.5 sin(3 pi x) (black),
+    the solution at later times (gray), the last one a single bump (blue), and the two cold walls."""
+    P = mapper(0, 1, -0.08, 1.15, 150, 1050, 70, 560)
+    u = lambda x, t: (math.exp(-0.1 * math.pi ** 2 * t) * math.sin(math.pi * x)
+                      + 0.5 * math.exp(-0.9 * math.pi ** 2 * t) * math.sin(3 * math.pi * x))
+    parts = [line(*P(0, 0), *P(1, 0), GRAY, 4)]
+    for t in (0.08, 0.2, 0.45):
+        parts.append(polyline([P(k / 400, u(k / 400, t)) for k in range(401)], GRAY, 5))
+    parts.append(polyline([P(k / 400, u(k / 400, 1.0)) for k in range(401)], BLUE, 6))
+    parts.append(polyline([P(k / 400, u(k / 400, 0)) for k in range(401)], INK, 6))
+    parts.append(dot(*P(0, 0), r=14))
+    parts.append(dot(*P(1, 0), r=14))
+    return svg(*parts)
+
+
 def rk4_region():
     """Week 6: the region of absolute stability of RK4, |P(z)| <= 1 with P(z) = 1 + z + z^2/2 + z^3/6 + z^4/24 (blue),
     and the smaller forward Euler disk (gray dashes) in the complex z plane."""
@@ -613,6 +629,7 @@ DRAWINGS = {
     "2026-11-12-numerical-pde-lecture-12": pushed_ellipse,
     "2026-11-13-pinn-04-boundary-layer": pinn_boundary_layer,
     "2026-11-14-numerical-analysis-week-7": lu_factors,
+    "2026-11-16-pinn-05-heat": pinn_heat,
 }
 
 
