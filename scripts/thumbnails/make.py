@@ -604,6 +604,27 @@ def lu_factors():
     return svg(*parts)
 
 
+def cell_averages():
+    """Lecture 13: finite volumes. A smooth profile (gray) is replaced by one average per cell (black bars).
+    Neighbor cells talk only through their interfaces: blue arrows are the fluxes through the walls."""
+    P = mapper(0, 1, 0, 1.15, 120, 1080, 70, 560)
+    q = lambda x: 0.18 + 0.75 * math.exp(-30 * (x - 0.45) ** 2)
+    n = 8
+    parts = [line(*P(0, 0), *P(1, 0), GRAY, 4)]
+    parts.append(polyline([P(x, y) for x, y in sample(q, 0, 1)], GRAY, 5))
+    for i in range(n + 1):
+        x = i / n
+        parts.append(line(*P(x, 0), *P(x, 1.02), FAINT, 4))
+    for i in range(n):
+        a, b = i / n, (i + 1) / n
+        avg = sum(q(a + (b - a) * (k + 0.5) / 50) for k in range(50)) / 50
+        parts.append(line(*P(a + 0.012, avg), *P(b - 0.012, avg), INK, 7))
+    for i in range(1, n):
+        x = i / n
+        parts.append(arrow(*P(x - 0.035, 1.07), *P(x + 0.035, 1.07), BLUE, 5, 16))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -627,6 +648,7 @@ DRAWINGS = {
     "2026-11-10-numerical-pde-lecture-11": amplified_mode,
     "2026-11-11-pinn-03-oscillator": pinn_oscillator,
     "2026-11-12-numerical-pde-lecture-12": pushed_ellipse,
+    "2026-11-17-numerical-pde-lecture-13": cell_averages,
     "2026-11-13-pinn-04-boundary-layer": pinn_boundary_layer,
     "2026-11-14-numerical-analysis-week-7": lu_factors,
     "2026-11-16-pinn-05-heat": pinn_heat,
