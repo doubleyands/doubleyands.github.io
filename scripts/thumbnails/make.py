@@ -508,6 +508,23 @@ def pinn_heat():
     return svg(*parts)
 
 
+def pinn_advection():
+    """PINN Problem 6: advection u_t + 30 u_x = 0 on a periodic domain. The start sin(x) (black), the same wave
+    moved to the right (gray, then blue), a gray arrow for the motion, and the two periodic ends (dots)."""
+    P = mapper(0, 2 * math.pi, -1.25, 1.6, 150, 1050, 70, 560)
+    curve = lambda shift: [P(2 * math.pi * k / 400, math.sin(2 * math.pi * k / 400 - shift)) for k in range(401)]
+    parts = [line(*P(0, 0), *P(2 * math.pi, 0), GRAY, 4)]
+    parts.append(polyline(curve(0.8), GRAY, 5))
+    parts.append(polyline(curve(1.6), BLUE, 6))
+    parts.append(polyline(curve(0), INK, 6))
+    x0, x1, y = 2.2, 4.0, 1.42  # arrow above the waves
+    parts.append(line(*P(x0, y), *P(x1, y), GRAY, 5))
+    parts.append(polyline([P(x1 - 0.25, y + 0.12), P(x1, y), P(x1 - 0.25, y - 0.12)], GRAY, 5))
+    parts.append(dot(*P(0, 0), r=14))
+    parts.append(dot(*P(2 * math.pi, 0), r=14))
+    return svg(*parts)
+
+
 def rk4_region():
     """Week 6: the region of absolute stability of RK4, |P(z)| <= 1 with P(z) = 1 + z + z^2/2 + z^3/6 + z^4/24 (blue),
     and the smaller forward Euler disk (gray dashes) in the complex z plane."""
@@ -652,6 +669,7 @@ DRAWINGS = {
     "2026-11-13-pinn-04-boundary-layer": pinn_boundary_layer,
     "2026-11-14-numerical-analysis-week-7": lu_factors,
     "2026-11-16-pinn-05-heat": pinn_heat,
+    "2026-11-18-pinn-06-advection": pinn_advection,
 }
 
 
