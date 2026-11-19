@@ -642,6 +642,29 @@ def cell_averages():
     return svg(*parts)
 
 
+def cfl_triangle():
+    """Lecture 14: the CFL condition. Grid points (gray) in the x-t plane, the numerical domain of
+    dependence of the upwind scheme (blue triangle) and the characteristic through the top point
+    (black). The foot of the characteristic lies inside the triangle."""
+    nx, nt = 9, 4
+    P = mapper(0, nx - 1, 0, nt, 160, 1040, 90, 540)
+    apex_i = nx - 2
+    parts = [line(*P(0, 0), *P(nx - 1, 0), GRAY, 4)]
+    tri = [P(apex_i, nt), P(apex_i - nt, 0), P(apex_i, 0)]
+    d = "M" + " L".join(f"{x:.1f},{y:.1f}" for x, y in tri) + " Z"
+    parts.append(f'<path d="{d}" fill="{BLUE}" fill-opacity="0.10" stroke="{BLUE}" stroke-width="6" stroke-linejoin="round"/>')
+    nu = 0.75
+    foot = apex_i - nu * nt
+    parts.append(line(*P(foot, 0), *P(apex_i, nt), INK, 7))
+    for n in range(nt + 1):
+        for i in range(nx):
+            inside = apex_i - (nt - n) <= i <= apex_i
+            parts.append(dot(*P(i, n), 9, BLUE if inside else GRAY))
+    parts.append(dot(*P(foot, 0), 13, INK))
+    parts.append(dot(*P(apex_i, nt), 13, INK))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -670,6 +693,7 @@ DRAWINGS = {
     "2026-11-14-numerical-analysis-week-7": lu_factors,
     "2026-11-16-pinn-05-heat": pinn_heat,
     "2026-11-18-pinn-06-advection": pinn_advection,
+    "2026-11-19-numerical-pde-lecture-14": cfl_triangle,
 }
 
 
