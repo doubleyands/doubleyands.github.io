@@ -525,6 +525,21 @@ def pinn_advection():
     return svg(*parts)
 
 
+def pinn_wave():
+    """PINN Problem 7: the wave equation on a string with fixed ends. The start sin(pi x) + 0.5 sin(4 pi x) (black),
+    two later shapes of the same string (gray at t = 0.125, blue at t = 0.5), and the two fixed ends (dots)."""
+    P = mapper(0, 1, -1.6, 1.6, 150, 1050, 70, 560)
+    u = lambda x, t: math.sin(math.pi * x) * math.cos(2 * math.pi * t) + 0.5 * math.sin(4 * math.pi * x) * math.cos(8 * math.pi * t)
+    curve = lambda t: [P(k / 400, u(k / 400, t)) for k in range(401)]
+    parts = [line(*P(0, 0), *P(1, 0), GRAY, 4)]
+    parts.append(polyline(curve(0.125), GRAY, 5))
+    parts.append(polyline(curve(0.5), BLUE, 6))
+    parts.append(polyline(curve(0), INK, 6))
+    parts.append(dot(*P(0, 0), r=14))
+    parts.append(dot(*P(1, 0), r=14))
+    return svg(*parts)
+
+
 def rk4_region():
     """Week 6: the region of absolute stability of RK4, |P(z)| <= 1 with P(z) = 1 + z + z^2/2 + z^3/6 + z^4/24 (blue),
     and the smaller forward Euler disk (gray dashes) in the complex z plane."""
@@ -693,6 +708,7 @@ DRAWINGS = {
     "2026-11-14-numerical-analysis-week-7": lu_factors,
     "2026-11-16-pinn-05-heat": pinn_heat,
     "2026-11-18-pinn-06-advection": pinn_advection,
+    "2026-11-20-pinn-07-wave": pinn_wave,
     "2026-11-19-numerical-pde-lecture-14": cfl_triangle,
 }
 
