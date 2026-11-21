@@ -680,6 +680,53 @@ def cfl_triangle():
     return svg(*parts)
 
 
+def cg_vs_descent():
+    """Week 8: level sets of a quadratic with a 2x2 SPD matrix (gray ellipses). Steepest descent zigzags
+    toward the minimum (gray dashed); conjugate gradient gets there in two steps (blue)."""
+    a, c, th = 1.0, 6.0, 0.28  # eigenvalues and rotation of the matrix
+    co, si = math.cos(th), math.sin(th)
+    A = [[a * co * co + c * si * si, (a - c) * co * si], [(a - c) * co * si, a * si * si + c * co * co]]
+    mv = lambda v: [A[0][0] * v[0] + A[0][1] * v[1], A[1][0] * v[0] + A[1][1] * v[1]]
+    dt = lambda u, v: u[0] * v[0] + u[1] * v[1]
+    P = mapper(-3.35, 3.35, -1.82, 1.82, 130, 1070, 60, 570)
+    parts = []
+    for level in (0.5, 1.6, 3.4, 5.8):
+        pts = []
+        for k in range(241):
+            t = 2 * math.pi * k / 240
+            u, v = math.sqrt(2 * level / a) * math.cos(t), math.sqrt(2 * level / c) * math.sin(t)
+            pts.append(P(co * u - si * v, si * u + co * v))
+        parts.append(polyline(pts, FAINT, 4))
+    x0 = [-2.9, 0.25]
+    # steepest descent with exact line search, b = 0, minimum at the origin
+    x, path = x0[:], [P(*x0)]
+    for _ in range(12):
+        r = [-g for g in mv(x)]
+        al = dt(r, r) / dt(r, mv(r))
+        x = [x[0] + al * r[0], x[1] + al * r[1]]
+        path.append(P(*x))
+    parts.append(polyline(path, GRAY, 5, "12 10"))
+    # conjugate gradient: two steps
+    x = x0[:]
+    r = [-g for g in mv(x)]
+    p = r[:]
+    cg = [P(*x)]
+    for _ in range(2):
+        Ap = mv(p)
+        al = dt(r, r) / dt(p, Ap)
+        x = [x[0] + al * p[0], x[1] + al * p[1]]
+        rn = [r[0] - al * Ap[0], r[1] - al * Ap[1]]
+        be = dt(rn, rn) / dt(r, r)
+        p = [rn[0] + be * p[0], rn[1] + be * p[1]]
+        r = rn
+        cg.append(P(*x))
+    parts.append(polyline(cg, BLUE, 7))
+    parts.append(dot(*cg[1], r=9, fill=BLUE))
+    parts.append(dot(*P(*x0), r=11, fill=INK))
+    parts.append(dot(*P(0, 0), r=12, fill=BLUE))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -706,6 +753,7 @@ DRAWINGS = {
     "2026-11-17-numerical-pde-lecture-13": cell_averages,
     "2026-11-13-pinn-04-boundary-layer": pinn_boundary_layer,
     "2026-11-14-numerical-analysis-week-7": lu_factors,
+    "2026-11-21-numerical-analysis-week-8": cg_vs_descent,
     "2026-11-16-pinn-05-heat": pinn_heat,
     "2026-11-18-pinn-06-advection": pinn_advection,
     "2026-11-20-pinn-07-wave": pinn_wave,

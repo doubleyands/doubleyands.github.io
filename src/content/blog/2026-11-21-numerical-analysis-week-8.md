@@ -1,0 +1,485 @@
+---
+title: "Numerical Analysis, Week 8: Condition Numbers and Iterative Methods"
+description: "Why a small residual can hide a large error, the condition number and the bound 1/cond ≤ (relative error)/(relative residual) ≤ cond, the Hilbert matrix, preconditioning, residual correction, Jacobi, Gauss–Seidel, SOR, the conjugate gradient method, and short notes on GMRES and BiCG. Checked with five small experiments."
+pubDate: 2026-11-21
+project: numerical-analysis
+tags: [numerical analysis, linear algebra, condition number, iterative methods, conjugate gradient, notes]
+---
+
+This is my summary of the eighth week of a numerical analysis course. As before, I write the ideas in my own words and check some of them with a small experiment. The course follows K. E. Atkinson, *An Introduction to Numerical Analysis*.
+
+Last week ended with Gaussian elimination and with one warning: a small residual does not always mean a small error (see [Week 7](/blog/2026-11-14-numerical-analysis-week-7/), Section 12). This week has two parts.
+
+1. **How bad can it be?** The *condition number* of $A$ answers this.
+2. **What if elimination is too expensive?** Then we use *iterative methods*. They start from a guess and improve it step by step.
+
+The two parts are linked. An iterative method only sees the residual, so the condition number decides how much we can trust it.
+
+## 1. Error, residual, and why $A$ matters
+
+If we could compute $A^{-1}$, then $\mathbf{x} = A^{-1}\mathbf{b}$ would be the best answer. For large systems this is almost never possible. So we pick a first guess $\mathbf{x}_0$ and try to improve it.
+
+We do not know the exact $\mathbf{x}$, so we cannot measure the error $\mathbf{x} - \mathbf{x}_0$. We can only measure the residual:
+
+$$
+\underbrace{\mathbf{b} - A\mathbf{x}_0}_{\text{residual}} = A\mathbf{x} - A\mathbf{x}_0 = A\,\underbrace{(\mathbf{x} - \mathbf{x}_0)}_{\text{error}} .
+$$
+
+So the matrix $A$ sits between what we see and what we want.
+
+- If $A = I$, the residual is the error.
+- If $A$ is diagonal, the residual and the error are linked entry by entry.
+- If $A$ is nearly singular, the residual can go down to $10^{-8}$ while the error stays near $1$.
+
+Almost every iterative solver works by making the residual small. So the properties of $A$, mainly its eigenvalues and its condition number, decide how well the solver works.
+
+## 2. The condition number
+
+The **condition number** of an invertible matrix is
+
+$$
+\mathrm{cond}(A) = \|A\|\,\|A^{-1}\| ,
+$$
+
+with an operator norm (see Week 7, Section 7). It is never smaller than one:
+
+$$
+\mathrm{cond}(A) = \|A\|\,\|A^{-1}\| \ \ge\ \|A A^{-1}\| = \|I\| = 1 .
+$$
+
+It can be very large: $10^{3}$, or $10^{16}$, or more. A matrix with a large condition number is called **ill-conditioned**.
+
+**Symmetric matrices.** In Week 7 we showed $\|A\|_2 = \rho(A)$ for a symmetric $A$, so $\|A\|_2$ is the largest $|\lambda|$. What about $A^{-1}$? Multiply $A\mathbf{v} = \lambda\mathbf{v}$ by $A^{-1}$:
+
+$$
+\mathbf{v} = \lambda A^{-1}\mathbf{v} \quad\Longrightarrow\quad A^{-1}\mathbf{v} = \frac{1}{\lambda}\,\mathbf{v} .
+$$
+
+So $A^{-1}$ has the same eigenvectors, and its eigenvalues are $1/\lambda$. The largest of them is $1/|\lambda|_{\min}$. Together:
+
+$$
+\mathrm{cond}_2(A) = \frac{|\lambda|_{\max}}{|\lambda|_{\min}} \qquad (A \text{ symmetric}).
+$$
+
+**Any matrix.** The value of $\mathrm{cond}(A)$ depends on the norm. A version that does not depend on the norm uses the spectral radius. Since $\rho(B) \le \|B\|$ for every operator norm,
+
+$$
+\mathrm{cond}(A) \ \ge\ \rho(A)\,\rho(A^{-1}) = \frac{\max_{\lambda} |\lambda|}{\min_{\lambda} |\lambda|} =: \mathrm{cond}_*(A) .
+$$
+
+This formula shows the main point: **a small eigenvalue hurts.** When one eigenvalue moves toward zero, the matrix moves toward a singular one, and $\mathrm{cond}_*$ blows up. A large eigenvalue is not the problem in the same way.
+
+## 3. The bound: $\frac{1}{\mathrm{cond}} \le \frac{\text{relative error}}{\text{relative residual}} \le \mathrm{cond}$
+
+The size of the error alone can fool us. Say $x = 10^{-5}$ and our answer is $3 \times 10^{-5}$. The error is only $2 \times 10^{-5}$, but the answer is three times too big. So we compare **relative** sizes:
+
+$$
+\text{relative error} = \frac{\|\mathbf{e}\|}{\|\mathbf{x}\|}, \qquad \text{relative residual} = \frac{\|\mathbf{r}\|}{\|\mathbf{b}\|} .
+$$
+
+Ideally their ratio is near $1$. Then a small residual means a small error. How far from $1$ can it be? Start from four true statements:
+
+$$
+A\mathbf{x} = \mathbf{b}, \qquad \mathbf{x} = A^{-1}\mathbf{b}, \qquad A\mathbf{e} = \mathbf{r}, \qquad \mathbf{e} = A^{-1}\mathbf{r} .
+$$
+
+Take norms. Each one gives an inequality:
+
+$$
+\|\mathbf{b}\| \le \|A\|\,\|\mathbf{x}\|, \qquad \|\mathbf{x}\| \le \|A^{-1}\|\,\|\mathbf{b}\|, \qquad \|\mathbf{r}\| \le \|A\|\,\|\mathbf{e}\|, \qquad \|\mathbf{e}\| \le \|A^{-1}\|\,\|\mathbf{r}\| .
+$$
+
+The ratio we want is
+
+$$
+\frac{\|\mathbf{e}\|/\|\mathbf{x}\|}{\|\mathbf{r}\|/\|\mathbf{b}\|} = \frac{\|\mathbf{e}\|}{\|\mathbf{r}\|}\cdot\frac{\|\mathbf{b}\|}{\|\mathbf{x}\|} .
+$$
+
+The first and the fourth inequality bound both factors from above. The second and the third bound them from below. So
+
+$$
+\frac{1}{\mathrm{cond}(A)} \ \le\ \frac{\|\mathbf{e}\|/\|\mathbf{x}\|}{\|\mathbf{r}\|/\|\mathbf{b}\|} \ \le\ \mathrm{cond}(A),
+\qquad\text{or}\qquad
+\frac{1}{\mathrm{cond}(A)}\,\frac{\|\mathbf{r}\|}{\|\mathbf{b}\|} \le \frac{\|\mathbf{e}\|}{\|\mathbf{x}\|} \le \mathrm{cond}(A)\,\frac{\|\mathbf{r}\|}{\|\mathbf{b}\|} .
+$$
+
+- If $\mathrm{cond}(A)$ is $10$ or even $100$, a small relative residual means a small relative error. Good.
+- If $\mathrm{cond}(A) = 10^{16}$, a relative residual of $10^{-12}$ tells us almost nothing about the error.
+
+The same bound has a second reading. Think of $\mathbf{r}$ as a small change in $\mathbf{b}$ and of $\mathbf{e}$ as the change it causes in $\mathbf{x}$. With a condition number near $1$, a small relative change in the data gives a small relative change in the solution. With a large condition number, it can give a large one.
+
+### A small example
+
+Take
+
+$$
+A = \begin{bmatrix} 6 & 5 \\ 7 & 6 \end{bmatrix}, \qquad A^{-1} = \begin{bmatrix} 6 & -5 \\ -7 & 6 \end{bmatrix} \quad(\det A = 1).
+$$
+
+Its eigenvalues are $6 \pm \sqrt{35} \approx 11.92$ and $0.0839$, so $\mathrm{cond}_* \approx 142$. The 2-norm condition number is about $146$.
+
+With $\mathbf{b} = (11, 13)$ the solution is $\mathbf{x} = (1, 1)$. Change $\mathbf{b}$ a little, to $(11.1, 12.9)$. The new solution is $(2.1, -0.3)$. The relative change in $\mathbf{b}$ is $0.8\%$. The relative change in $\mathbf{x}$ is $120\%$, so it is $145$ times larger. That is almost the full bound of $146$.
+
+This is what **ill-conditioned** means: the solution is unstable under small relative changes of $\mathbf{b}$. The condition number is a good indicator of it.
+
+### The Hilbert matrix
+
+The famous bad example is the **Hilbert matrix** $H_n$, with entries $h_{ij} = \frac{1}{i + j - 1}$:
+
+$$
+H_n = \begin{bmatrix} 1 & \frac12 & \cdots & \frac1n \\ \frac12 & \frac13 & \cdots & \frac{1}{n+1} \\ \vdots & & & \vdots \\ \frac1n & \frac{1}{n+1} & \cdots & \frac{1}{2n-1} \end{bmatrix}.
+$$
+
+It is symmetric, dense and looks harmless. But its condition number grows by a factor of about $30$ each time $n$ goes up by one (Experiment A). Already for $n = 12$ it is about $10^{16}$, the same size as one over the machine precision.
+
+## 4. Preconditioning: the idea
+
+If $\mathrm{cond}(A)$ is huge, we do not have to accept it. Multiply both sides by an invertible $P$:
+
+$$
+A\mathbf{x} = \mathbf{b} \quad\longrightarrow\quad PA\mathbf{x} = P\mathbf{b} \quad\longrightarrow\quad \tilde A\mathbf{x} = \tilde{\mathbf{b}} .
+$$
+
+The solution does not change. But if we choose $P$ well, $\mathrm{cond}(\tilde A)$ can be close to $1$. Such a $P$ is called a **preconditioner**. (In Week 7 this was the idea behind similar matrices.) We come back to it in Section 6.
+
+## 5. Residual correction
+
+The residual is the one thing we can compute, so let us use it to correct the answer. Suppose we have a guess $\mathbf{x}^{(0)}$. Then
+
+$$
+\mathbf{r}^{(0)} = \mathbf{b} - A\mathbf{x}^{(0)}, \qquad A\mathbf{e}^{(0)} = \mathbf{r}^{(0)} .
+$$
+
+If we could solve for $\mathbf{e}^{(0)}$ exactly, $\mathbf{x}^{(0)} + \mathbf{e}^{(0)}$ would be the exact solution. In practice we solve it only approximately, for example with the stored $L$ and $U$ factors, and get $\hat{\mathbf e}^{(0)}$. Then $\mathbf{x}^{(1)} = \mathbf{x}^{(0)} + \hat{\mathbf e}^{(0)}$, and we repeat. This is called **iterative improvement** or the **residual correction method**.
+
+Write the approximate solve as $\hat{\mathbf e} = C\mathbf{r}$, where $C$ is an approximation of $A^{-1}$:
+
+$$
+\mathbf{r}^{(m)} = \mathbf{b} - A\mathbf{x}^{(m)}, \qquad \mathbf{x}^{(m+1)} = \mathbf{x}^{(m)} + C\,\mathbf{r}^{(m)}, \qquad m = 0, 1, 2, \dots
+$$
+
+One important remark: **$C$ does not have to be a matrix that we write down.** It stands for the whole process that turns a residual into a correction. All the iterative methods below fit into this slot.
+
+**The error.** Put $\mathbf{r}^{(m)} = A\mathbf{x} - A\mathbf{x}^{(m)}$ into the update:
+
+$$
+\mathbf{x} - \mathbf{x}^{(m+1)} = \mathbf{x} - \mathbf{x}^{(m)} - CA(\mathbf{x} - \mathbf{x}^{(m)}) = (I - CA)(\mathbf{x} - \mathbf{x}^{(m)}) = \cdots = (I - CA)^{m+1}(\mathbf{x} - \mathbf{x}^{(0)}) .
+$$
+
+If $C = A^{-1}$, then $I - CA = 0$ and one step gives the exact answer. In general we take norms:
+
+$$
+\|\mathbf{x} - \mathbf{x}^{(m)}\| \le \|I - CA\|^{m}\,\|\mathbf{x} - \mathbf{x}^{(0)}\| .
+$$
+
+- If $\|I - CA\| < 1$, the iteration converges for every starting guess.
+- More exactly, it converges for every starting guess **if and only if** $\rho(I - CA) < 1$. This is the theorem on $A^m \to 0$ from Week 7, Section 8.
+- The convergence is **linear**: the error shrinks by about a fixed factor $c < 1$ in each step.
+
+**When to stop.** The factor $c$ is unknown, and the true error needs $\mathbf{x}$. But the next iterate is closer to $\mathbf{x}$ than the current one. So we replace $\mathbf{x}$ by the next iterate and estimate
+
+$$
+c \approx \max_m \frac{\|\mathbf{x}^{(m+2)} - \mathbf{x}^{(m+1)}\|}{\|\mathbf{x}^{(m+1)} - \mathbf{x}^{(m)}\|} .
+$$
+
+We take the maximum because $\|I - CA\|$ is itself a maximum: the largest stretch over all vectors. If this ratio gets close to $1$, the iteration has stalled, and we should stop and change something else. Choosing when to stop matters a lot for both cost and accuracy. This ratio is one good indicator among several.
+
+## 6. Stationary and nonstationary methods
+
+An **iterative method** builds a sequence of approximations that (we hope) gets closer to the exact solution at each step. There are two families.
+
+- **Stationary methods** do the same operation in every step:
+  $$
+  \mathbf{x}^{(k)} = B\,\mathbf{x}^{(k-1)} + \mathbf{c},
+  $$
+  with a fixed matrix $B$ and a fixed vector $\mathbf{c}$. They are old, easy to understand, easy to program and easy to analyze. Usually they are slower.
+- **Nonstationary methods** change their coefficients in every step: a new direction and a new step length each time. They are newer and harder to analyze, but usually much faster.
+
+Neither family always wins. Combined with a good preconditioner, a stationary method can be the better choice.
+
+In both families the speed depends mostly on the **spectrum** (the set of eigenvalues) of the **coefficient matrix** $A$. The name comes from PDEs: finite differences, finite volumes and finite elements all turn a PDE into $A\mathbf{x} = \mathbf{b}$, where $\mathbf{x}$ holds the unknown values at the grid points.
+
+A **preconditioner** is a second matrix (or again, a process) that changes this spectrum into a better one: $PA\mathbf{x} = P\mathbf{b}$ with $\mathrm{cond}(PA)$ close to $1$. A good preconditioner saves more time than it costs. Without one, some problems do not converge at all. Well-known families are *domain decomposition* (split the domain into small pieces and solve on each piece, which also gives parallel computing), *multigrid* (fix the smooth part of the error on coarser grids), and *incomplete LU* (an LU factorization that keeps only some of the entries). The course only named these, so I only name them here.
+
+Why do we need them? For the matrix of the 1D Poisson problem, the condition number grows like $n^2$ (Experiment D). Bigger grids give worse matrices.
+
+## 7. Jacobi
+
+Write equation $i$ and keep only the diagonal term on the left:
+
+$$
+a_{ii}\,x_i = b_i - \sum_{j \ne i} a_{ij}\,x_j .
+$$
+
+This is still exact. Now put the old guess on the right side and call the result the new value:
+
+$$
+x_i^{(k)} = \frac{1}{a_{ii}}\Big(b_i - \sum_{j \ne i} a_{ij}\,x_j^{(k-1)}\Big), \qquad i = 1, \dots, n .
+$$
+
+Every equation is used on its own, so all $n$ entries can be updated **at the same time**, and the order does not matter.
+
+Why the diagonal? Matrices from PDEs usually have their largest entry on the diagonal. The 5-point Laplacian has $-4$ on the diagonal and $1$ for the four neighbors. If the diagonal is not the largest, we can first exchange rows to put large entries there.
+
+**Matrix form.** Split $A = D - L - U$, with $D$ the diagonal, $-L$ the strictly lower part and $-U$ the strictly upper part. (The minus signs are only for convenience: these parts move to the right side.) Then
+
+$$
+D\mathbf{x} = \mathbf{b} + (L + U)\mathbf{x} \quad\Longrightarrow\quad \mathbf{x}^{(k)} = D^{-1}(L + U)\,\mathbf{x}^{(k-1)} + D^{-1}\mathbf{b} .
+$$
+
+So $B = D^{-1}(L + U)$ and $\mathbf{c} = D^{-1}\mathbf{b}$. Both are fixed, so Jacobi is stationary. It is also residual correction with $C = D^{-1}$, since $\mathbf{x}^{(k-1)} + D^{-1}(\mathbf{b} - A\mathbf{x}^{(k-1)})$ is the same thing.
+
+**The error.** The exact solution satisfies the same equation, $\mathbf{x} = D^{-1}(L + U)\mathbf{x} + D^{-1}\mathbf{b}$. Subtract, and $D^{-1}\mathbf{b}$ cancels:
+
+$$
+\mathbf{e}^{(k)} = D^{-1}(L + U)\,\mathbf{e}^{(k-1)} = \cdots = \big(D^{-1}(L + U)\big)^k\,\mathbf{e}^{(0)} .
+$$
+
+**Convergence.**
+
+- If $\rho\big(D^{-1}(L + U)\big) < 1$, then $\mathbf{e}^{(k)} \to \mathbf{0}$. (This is the standard test for every stationary method: the spectral radius of the iteration matrix is below one.)
+- If $A$ is **strictly diagonally dominant**, that is
+  $$
+  |a_{kk}| > \sum_{j \ne k} |a_{kj}| \quad \text{for every row } k,
+  $$
+  then Jacobi converges. Reason: row $k$ of the error equation gives $|e_k^{(\text{new})}| \le \sum_{j \ne k} \frac{|a_{kj}|}{|a_{kk}|}\,\max_j |e_j| < \max_j |e_j|$, so the largest entry of the error shrinks by a fixed factor $q < 1$ in every step.
+
+Both conditions are **sufficient, not necessary**. Jacobi can converge when they fail. For example, $\begin{bmatrix} 1 & 3 \\ 0.2 & 1 \end{bmatrix}$ is not diagonally dominant in its first row, but its Jacobi matrix has $\rho = \sqrt{0.6} \approx 0.77 < 1$.
+
+## 8. Gauss–Seidel
+
+In Jacobi, when we compute $x_2^{(k)}$, we already have the new $x_1^{(k)}$. Why not use it? Gauss–Seidel uses each new value as soon as it exists:
+
+$$
+x_i^{(k)} = \frac{1}{a_{ii}}\Big(b_i - \sum_{j < i} a_{ij}\,x_j^{(k)} - \sum_{j > i} a_{ij}\,x_j^{(k-1)}\Big) .
+$$
+
+In matrix form, the new values sit on the left with $D - L$:
+
+$$
+(D - L)\,\mathbf{x}^{(k)} = U\mathbf{x}^{(k-1)} + \mathbf{b} \quad\Longrightarrow\quad \mathbf{x}^{(k)} = (D - L)^{-1}U\,\mathbf{x}^{(k-1)} + (D - L)^{-1}\mathbf{b},
+$$
+
+and the error follows $\mathbf{e}^{(k)} = (D - L)^{-1}U\,\mathbf{e}^{(k-1)}$.
+
+- It works for any matrix with a nonzero diagonal. Convergence is guaranteed if $A$ is strictly diagonally dominant, or symmetric positive definite (SPD), or more generally if $\rho\big((D - L)^{-1}U\big) < 1$. Again, these are sufficient conditions only.
+- Each new entry depends on all the entries computed before it. So the **order of the equations changes the result.** A clever order can bring back some parallel work, but it can also change the speed. There is a trade-off between parallelism and convergence rate.
+
+**Jacobi or Gauss–Seidel?** Gauss–Seidel is a bit better per step: for the 1D Poisson matrix it needs half as many steps (Experiment D). But to compute $x_n^{(k)}$ it must wait for all of $x_1^{(k)}, \dots, x_{n-1}^{(k)}$, so it is very hard to run in parallel. Jacobi updates all entries at once from the old vector, so we can give each entry to a different processor. That is why Jacobi is often used in practice.
+
+## 9. SOR (successive over-relaxation)
+
+SOR adds extrapolation to Gauss–Seidel. For each entry, in order, it takes a weighted average of the old value and the Gauss–Seidel value $\bar x_i^{(k)}$:
+
+$$
+x_i^{(k)} = w\,\bar x_i^{(k)} + (1 - w)\,x_i^{(k-1)} .
+$$
+
+- With $w = 1$ this is Gauss–Seidel.
+- With $w > 1$ the weight $1 - w$ is negative. So we step past the Gauss–Seidel value, further in the same direction. This is the "over-relaxation".
+
+SOR also has a matrix form, but it is not needed here: we can look it up when we need it. What matters is that a good $w$ makes SOR much faster than Gauss–Seidel and Jacobi.
+
+**Choosing $w$.**
+
+- If $w$ is outside $(0, 2)$, SOR does not converge (a theorem of Kahan).
+- If $A$ is SPD, SOR converges for every $w \in (0, 2)$. The speed still depends strongly on $w$.
+- For an important class of matrices (including the Poisson matrices) the best value is
+  $$
+  w_{\text{opt}} = \frac{2}{1 + \sqrt{1 - \rho^2}}, \qquad \rho = \rho\big(D^{-1}(L + U)\big),
+  $$
+  the spectral radius of the Jacobi matrix.
+- But computing $\rho$ is expensive. In practice people use $w = 2 - O(h)$, where $h$ is the mesh size, so $w$ is usually close to $2$. A bad $w$ can make SOR slow, or stop it from converging.
+
+## 10. Nonstationary methods and conjugate gradients
+
+A nonstationary method has no fixed $B$ and $\mathbf{c}$. Instead, every step chooses a **search direction** $\mathbf{p}^{(k)}$ and a **step length** $\alpha_k$:
+
+$$
+\mathbf{x}^{(k+1)} = \mathbf{x}^{(k)} + \alpha_k\,\mathbf{p}^{(k)} .
+$$
+
+We look around the current point, find a direction that improves the answer, and move exactly $\alpha_k$ along it. If we move too far, the iterates can go off course.
+
+### The conjugate gradient method (CG)
+
+CG is the oldest and best-known nonstationary method. It is made for **symmetric positive definite** matrices. Choose $\mathbf{x}^{(0)}$ and set $\mathbf{p}^{(0)} = \mathbf{r}^{(0)} = \mathbf{b} - A\mathbf{x}^{(0)}$. Then repeat:
+
+$$
+\begin{aligned}
+\alpha_k &= \frac{\mathbf{r}^{(k)} \cdot \mathbf{r}^{(k)}}{\mathbf{p}^{(k)} \cdot A\mathbf{p}^{(k)}}, &
+\mathbf{x}^{(k+1)} &= \mathbf{x}^{(k)} + \alpha_k\,\mathbf{p}^{(k)}, &
+\mathbf{r}^{(k+1)} &= \mathbf{b} - A\mathbf{x}^{(k+1)}, \\
+\beta_k &= \frac{\mathbf{r}^{(k+1)} \cdot \mathbf{r}^{(k+1)}}{\mathbf{r}^{(k)} \cdot \mathbf{r}^{(k)}}, &
+\mathbf{p}^{(k+1)} &= \mathbf{r}^{(k+1)} + \beta_k\,\mathbf{p}^{(k)} . & &
+\end{aligned}
+$$
+
+So CG keeps three sequences: the iterates, their residuals, and the search directions. The choice of $\beta_k$ makes the new residual orthogonal to the old one, and in fact to all earlier residuals. The choice of $\alpha_k$ is the best step length along $\mathbf{p}^{(k)}$; the course explains why next week, so I leave that for the next post. Books write CG in many different orders, but they are all the same method.
+
+**Why "conjugate"?** Think of minimizing the bowl $f(\mathbf{x}) = \frac12\mathbf{x}^T A\mathbf{x} - \mathbf{b}^T\mathbf{x}$. Its lowest point solves $A\mathbf{x} = \mathbf{b}$, and $-\nabla f = \mathbf{r}$. The plain **gradient method** always walks downhill along $\mathbf{r}$. In a long, narrow valley this makes it zigzag from wall to wall, with many tiny steps. CG instead makes each new direction **conjugate** to the old ones: orthogonal in the sense of $A$,
+
+$$
+\mathbf{p}^{(i)} \cdot A\mathbf{p}^{(j)} = 0 \qquad (i \ne j).
+$$
+
+Then no step undoes the work of an earlier step. In $n$ dimensions there are only $n$ such directions, so in exact arithmetic CG reaches the solution in at most $n$ steps.
+
+The nice part is symmetry. When $A$ is symmetric, it is enough to make the new direction conjugate to the **last** one; it is then automatically conjugate to all earlier ones. That is why each CG step is cheap. When $A$ is not symmetric, this breaks, and CG usually does not converge (Experiment E).
+
+**Krylov subspaces.** Without a preconditioner, the $i$-th CG iterate lies in
+
+$$
+\mathbf{x}^{(0)} + \mathrm{span}\{\mathbf{r}^{(0)},\ A\mathbf{r}^{(0)},\ \dots,\ A^{i-1}\mathbf{r}^{(0)}\},
+$$
+
+and among all vectors there it minimizes $(\mathbf{x}^{(i)} - \mathbf{x})^T A\,(\mathbf{x}^{(i)} - \mathbf{x})$. For an SPD matrix this minimum exists. This span is called a **Krylov subspace**. We only multiply $\mathbf{r}^{(0)}$ by $A$ again and again, but the vectors are linearly independent until the space stops growing. When it stops growing, we have reached the exact solution.
+
+### Nonsymmetric matrices
+
+**Normal equations.** Multiply by $A^T$:
+
+$$
+A\mathbf{x} = \mathbf{b} \quad\longrightarrow\quad A^TA\,\mathbf{x} = A^T\mathbf{b} .
+$$
+
+Now the matrix $A^TA$ is SPD (for invertible $A$), so CG works. But there is a price. The eigenvalues of $A^TA$ are the squares of the singular values of $A$, so
+
+$$
+\mathrm{cond}_2(A^TA) = \mathrm{cond}_2(A)^2 .
+$$
+
+If $\mathrm{cond}(A)$ is already large, the squared one is much worse. Use this only for well-behaved matrices.
+
+**GMRES** (generalized minimal residual, Saad and Schultz, 1986) is built for nonsymmetric and also indefinite matrices (eigenvalues with both signs). Without symmetry, checking only the last direction is not enough. So GMRES compares each new direction with **all** earlier ones (with Gram–Schmidt) and keeps an orthonormal basis of the Krylov subspace. Then it picks the vector in that space with the **smallest residual norm** $\|\mathbf{b} - A\mathbf{x}^{(i)}\|$, which gives the name. Good implementations exist in many languages, so we do not write it ourselves.
+
+The main drawback: work and memory per step grow with the number of steps. After 1000 steps we must store 1000 vectors. The usual fix is **restarting**: after $m$ steps, throw the stored vectors away and start again from the current iterate. There is no rule for $m$. Too small, and GMRES is slow or does not converge. Too large, and it costs too much work and memory.
+
+**BiCG** (biconjugate gradient) is a lighter option. It runs a CG-like recurrence with $A$ and with $A^T$ at the same time. Instead of one orthogonal sequence of residuals, it keeps two sequences $\mathbf{r}^{(i)}$ and $\tilde{\mathbf{r}}^{(i)}$ that are orthogonal to each other: $\tilde{\mathbf{r}}^{(i)} \cdot \mathbf{r}^{(j)} = 0$ for $i \ne j$. So it keeps short recurrences, like CG. The price is that it does not minimize anything, but its accuracy is often close to GMRES.
+
+Other names in this family: MINRES, SYMMLQ, CGNE, CGNR, QMR, CGS, and Chebyshev iteration.
+
+## 11. Experiments
+
+I wrote one Python script with five small experiments, using only the standard library.
+
+### A. The Hilbert matrix
+
+I computed $\mathrm{cond}_2(H_n) = \lambda_{\max}(H_n)\,\lambda_{\max}(H_n^{-1})$ with power iteration. The inverse $H_n^{-1}$ was computed exactly with fractions, so the small eigenvalues do not get lost in rounding.
+
+| $n$ | 2 | 4 | 6 | 8 | 10 | 12 |
+|---|---|---|---|---|---|---|
+| $\mathrm{cond}_2(H_n)$ | $19.3$ | $1.55 \times 10^{4}$ | $1.50 \times 10^{7}$ | $1.53 \times 10^{10}$ | $1.60 \times 10^{13}$ | $1.71 \times 10^{16}$ |
+
+Each step in $n$ multiplies the condition number by about $27$ to $33$.
+
+Then I took $H_8$, the exact solution $\mathbf{x} = (1, \dots, 1)$, and a wrong answer $\hat{\mathbf x} = \mathbf{x} + \mathbf{v}$, where $\mathbf{v}$ points along the eigenvector of the smallest eigenvalue and has half the length of $\mathbf{x}$:
+
+| relative residual | relative error | ratio | $\mathrm{cond}_2(H_8)$ |
+|---|---|---|---|
+| $3.8 \times 10^{-11}$ | $0.50$ | $1.32 \times 10^{10}$ | $1.53 \times 10^{10}$ |
+
+The residual says "almost exact", but half of the answer is wrong. The ratio is close to the upper bound from Section 3, because $\mathbf{v}$ was picked along the worst direction.
+
+### B. Testing the bound
+
+For $A = \begin{bmatrix} 6 & 5 \\ 7 & 6 \end{bmatrix}$ ($\mathrm{cond}_2 = 146.0$) I changed $\mathbf{b}$ by $20\,000$ random vectors of length $10^{-3}$ and computed the ratio (relative error)/(relative residual) each time.
+
+| exact $\mathbf{x}$ | smallest ratio | largest ratio |
+|---|---|---|
+| $(1, 1)$ | $0.997$ | $145.5$ |
+| $(1, -1)$ | $0.083$ | $12.08$ |
+
+All $40\,000$ ratios lie between $1/\mathrm{cond} = 0.0068$ and $\mathrm{cond} = 146$. The bound is reached only when both $\mathbf{b}$ and the change point in special directions. For $\mathbf{x} = (1, 1)$, $\mathbf{b} = (11, 13)$ is close to the direction that $A$ stretches most, so the worst change almost reaches the upper bound. The same $A$ with another $\mathbf{x}$ is much better behaved. The condition number is a worst case, not a typical case.
+
+### C. Residual correction and the estimate of $c$
+
+For $A = \begin{bmatrix} 5 & 2 & 0 \\ 1 & 6 & 2 \\ 0 & 3 & 7 \end{bmatrix}$, $\mathbf{x} = (1, -1, 2)$ and $C = D^{-1}$ (that is, Jacobi), the iteration matrix $I - CA$ has eigenvalues $0$ and $\pm 0.4577$, and $\|I - CA\|_2 = 0.586$. Starting from $\mathbf{x}^{(0)} = \mathbf{0}$:
+
+| $m$ | error $\lVert \mathbf{x} - \mathbf{x}^{(m)} \rVert_2$ | error ratio (one step) | error ratio (two steps) | estimate of $c$ (no $\mathbf{x}$ needed) |
+|---|---|---|---|---|
+| 0 | 2.45 | 0.416 | 0.217 | 0.374 |
+| 1 | 1.02 | 0.522 | 0.2095 | 0.582 |
+| 2 | 0.532 | 0.402 | 0.2095 | 0.360 |
+| 3 | 0.213 | 0.522 | 0.2095 | 0.582 |
+| 10 | $1.0 \times 10^{-3}$ | 0.402 | 0.2095 | 0.360 |
+| 23 | $3.5 \times 10^{-8}$ | 0.522 | 0.2095 | 0.582 |
+
+- The one-step ratio jumps between $0.522$ and $0.402$, because the two eigenvalues $\pm 0.4577$ have the same size and opposite signs. Over two steps the ratio is exactly $0.2095 = 0.4577^2 = \rho^2$.
+- Every one-step ratio stays below $\|I - CA\|_2 = 0.586$, as the bound says.
+- The estimate that does not use $\mathbf{x}$ has maximum $0.582$, very close to $\|I - CA\|_2$. This is why the formula takes the maximum.
+
+### D. Jacobi, Gauss–Seidel, SOR and CG on the Poisson matrix
+
+The 1D Poisson matrix $\mathrm{tridiag}(-1, 2, -1)$ of size $n$ is SPD, and its eigenvalues are known in closed form: $4\sin^2\frac{k\pi h}{2}$, $h = \frac{1}{n+1}$. So the Jacobi spectral radius is $\cos \pi h$, and $w_{\text{opt}}$ follows from Section 9. I chose a random exact solution, set $\mathbf{b} = A\mathbf{x}$, started from $\mathbf{0}$ and counted steps until the relative error was below $10^{-8}$.
+
+| $n$ | $\mathrm{cond}_2$ | $\rho_{\text{Jacobi}}$ | $w_{\text{opt}}$ | Jacobi | Gauss–Seidel | SOR | CG |
+|---|---|---|---|---|---|---|---|
+| 8 | 32.2 | 0.9397 | 1.490 | 280 | 134 | 30 | 8 |
+| 16 | 116.5 | 0.9830 | 1.690 | 1018 | 502 | 60 | 16 |
+| 32 | 440.7 | 0.9955 | 1.826 | 3660 | 1784 | 118 | 32 |
+| 64 | 1711.7 | 0.9988 | 1.908 | 14274 | 7129 | 205 | 64 |
+
+- **The condition number grows like $n^2$:** it is almost exactly $4(n+1)^2/\pi^2$ ($441.4$ for $n = 32$). Doubling $n$ makes it about four times larger.
+- **Jacobi** needs about four times more steps when $n$ doubles, like the condition number.
+- **Gauss–Seidel** needs half as many steps as Jacobi. For this matrix $\rho_{\text{GS}} = \rho_{\text{Jacobi}}^2$, and two Jacobi steps shrink the error as much as one Gauss–Seidel step.
+- **SOR** with $w_{\text{opt}}$ needs only about twice as many steps when $n$ doubles. For $n = 64$ it is $70$ times faster than Jacobi.
+- **CG** stops after exactly $n$ steps, as the Krylov argument promises. In this test CG improves slowly (the error is still $3 \times 10^{-2}$ after $31$ steps) and then drops to $10^{-13}$ in the last step. The random solution has a part along every eigenvector, so the Krylov space needs all $n$ directions.
+
+The chart shows the error history for $n = 32$.
+
+<figure class="viz">
+<div class="viz-legend"><span class="viz-key"><span class="viz-swatch" style="background:#2a78d6"></span>Jacobi</span><span class="viz-key"><span class="viz-swatch" style="background:#eb6834"></span>Gauss–Seidel</span><span class="viz-key"><span class="viz-swatch" style="background:#1baf7a"></span>SOR, optimal w</span><span class="viz-key"><span class="viz-swatch" style="background:#eda100"></span>conjugate gradient</span></div>
+<div class="viz-frame">
+<svg viewBox="0 0 680 400" role="img" tabindex="0" aria-label="Relative error against iteration number, on a log scale, for the 1D Poisson matrix with n = 32. Jacobi falls slowly and is still at about 1e-2 after 600 iterations. Gauss-Seidel falls about twice as fast and reaches about 5e-4. SOR with the optimal w reaches 1e-10 after 143 iterations. Conjugate gradient stays near 1e-2 for a while and then drops to about 1e-13 at iteration 32." class="viz-plot"><line x1="64" x2="560" y1="30.0" y2="30.0" class="viz-grid"/><text x="54" y="34.0" text-anchor="end" class="viz-tick">1</text><line x1="64" x2="560" y1="74.3" y2="74.3" class="viz-grid"/><text x="54" y="78.3" text-anchor="end" class="viz-tick">10<tspan dy="-0.5em" font-size="75%">−2</tspan></text><line x1="64" x2="560" y1="118.6" y2="118.6" class="viz-grid"/><text x="54" y="122.6" text-anchor="end" class="viz-tick">10<tspan dy="-0.5em" font-size="75%">−4</tspan></text><line x1="64" x2="560" y1="162.9" y2="162.9" class="viz-grid"/><text x="54" y="166.9" text-anchor="end" class="viz-tick">10<tspan dy="-0.5em" font-size="75%">−6</tspan></text><line x1="64" x2="560" y1="207.1" y2="207.1" class="viz-grid"/><text x="54" y="211.1" text-anchor="end" class="viz-tick">10<tspan dy="-0.5em" font-size="75%">−8</tspan></text><line x1="64" x2="560" y1="251.4" y2="251.4" class="viz-grid"/><text x="54" y="255.4" text-anchor="end" class="viz-tick">10<tspan dy="-0.5em" font-size="75%">−10</tspan></text><line x1="64" x2="560" y1="295.7" y2="295.7" class="viz-grid"/><text x="54" y="299.7" text-anchor="end" class="viz-tick">10<tspan dy="-0.5em" font-size="75%">−12</tspan></text><line x1="64" x2="560" y1="340.0" y2="340.0" class="viz-grid"/><text x="54" y="344.0" text-anchor="end" class="viz-tick">10<tspan dy="-0.5em" font-size="75%">−14</tspan></text><text x="64.0" y="362" text-anchor="middle" class="viz-tick">0</text><text x="146.7" y="362" text-anchor="middle" class="viz-tick">100</text><text x="229.3" y="362" text-anchor="middle" class="viz-tick">200</text><text x="312.0" y="362" text-anchor="middle" class="viz-tick">300</text><text x="394.7" y="362" text-anchor="middle" class="viz-tick">400</text><text x="477.3" y="362" text-anchor="middle" class="viz-tick">500</text><text x="560.0" y="362" text-anchor="middle" class="viz-tick">600</text><text x="312.0" y="388" text-anchor="middle" class="viz-axis-title">Iteration k</text><text x="64" y="14" class="viz-axis-title">Relative error</text><path d="M64.0,30.0 L64.8,33.2 L65.7,34.7 L66.5,35.6 L67.3,36.3 L68.1,36.9 L69.0,37.3 L69.8,37.8 L70.6,38.2 L71.4,38.6 L72.3,38.9 L73.1,39.3 L73.9,39.6 L74.7,39.9 L75.6,40.1 L76.4,40.4 L77.2,40.7 L78.1,40.9 L78.9,41.1 L79.7,41.3 L80.5,41.6 L81.4,41.8 L82.2,42.0 L83.0,42.2 L83.8,42.3 L84.7,42.5 L85.5,42.7 L86.3,42.9 L87.1,43.0 L88.0,43.2 L88.8,43.4 L89.6,43.5 L90.5,43.7 L91.3,43.8 L92.1,44.0 L92.9,44.1 L93.8,44.3 L94.6,44.4 L95.4,44.5 L96.2,44.7 L97.1,44.8 L97.9,45.0 L98.7,45.1 L99.5,45.2 L100.4,45.3 L101.2,45.5 L102.0,45.6 L102.9,45.7 L103.7,45.8 L104.5,46.0 L105.3,46.1 L106.2,46.2 L107.0,46.3 L107.8,46.4 L108.6,46.5 L109.5,46.7 L110.3,46.8 L111.1,46.9 L111.9,47.0 L112.8,47.1 L113.6,47.2 L114.4,47.3 L115.3,47.4 L116.1,47.5 L116.9,47.6 L117.7,47.7 L118.6,47.8 L119.4,47.9 L120.2,48.0 L121.0,48.1 L121.9,48.2 L122.7,48.3 L123.5,48.4 L124.3,48.5 L125.2,48.6 L126.0,48.7 L126.8,48.8 L127.7,48.8 L128.5,48.9 L129.3,49.0 L130.1,49.1 L131.0,49.2 L131.8,49.3 L132.6,49.4 L133.4,49.4 L134.3,49.5 L135.1,49.6 L135.9,49.7 L136.7,49.8 L137.6,49.8 L138.4,49.9 L139.2,50.0 L140.1,50.1 L140.9,50.2 L141.7,50.2 L142.5,50.3 L143.4,50.4 L144.2,50.4 L145.0,50.5 L145.8,50.6 L146.7,50.7 L147.5,50.7 L148.3,50.8 L149.1,50.9 L150.0,50.9 L150.8,51.0 L151.6,51.1 L152.5,51.1 L153.3,51.2 L154.1,51.3 L154.9,51.3 L155.8,51.4 L156.6,51.5 L157.4,51.5 L158.2,51.6 L159.1,51.7 L159.9,51.7 L160.7,51.8 L161.5,51.9 L162.4,51.9 L163.2,52.0 L164.0,52.0 L164.9,52.1 L165.7,52.2 L166.5,52.2 L167.3,52.3 L168.2,52.3 L169.0,52.4 L169.8,52.5 L170.6,52.5 L171.5,52.6 L172.3,52.6 L173.1,52.7 L173.9,52.7 L174.8,52.8 L175.6,52.9 L176.4,52.9 L177.3,53.0 L178.1,53.0 L178.9,53.1 L179.7,53.1 L180.6,53.2 L181.4,53.2 L182.2,53.3 L183.0,53.3 L183.9,53.4 L184.7,53.4 L185.5,53.5 L186.3,53.6 L187.2,53.6 L188.0,53.7 L188.8,53.7 L189.7,53.8 L190.5,53.8 L191.3,53.9 L192.1,53.9 L193.0,54.0 L193.8,54.0 L194.6,54.1 L195.4,54.1 L196.3,54.2 L197.1,54.2 L197.9,54.3 L198.7,54.3 L199.6,54.4 L200.4,54.4 L201.2,54.5 L202.1,54.5 L202.9,54.6 L203.7,54.6 L204.5,54.7 L205.4,54.7 L206.2,54.8 L207.0,54.8 L207.8,54.8 L208.7,54.9 L209.5,54.9 L210.3,55.0 L211.1,55.0 L212.0,55.1 L212.8,55.1 L213.6,55.2 L214.5,55.2 L215.3,55.3 L216.1,55.3 L216.9,55.4 L217.8,55.4 L218.6,55.5 L219.4,55.5 L220.2,55.6 L221.1,55.6 L221.9,55.7 L222.7,55.7 L223.5,55.7 L224.4,55.8 L225.2,55.8 L226.0,55.9 L226.9,55.9 L227.7,56.0 L228.5,56.0 L229.3,56.1 L230.2,56.1 L231.0,56.2 L231.8,56.2 L232.6,56.2 L233.5,56.3 L234.3,56.3 L235.1,56.4 L235.9,56.4 L236.8,56.5 L237.6,56.5 L238.4,56.6 L239.3,56.6 L240.1,56.7 L240.9,56.7 L241.7,56.7 L242.6,56.8 L243.4,56.8 L244.2,56.9 L245.0,56.9 L245.9,57.0 L246.7,57.0 L247.5,57.1 L248.3,57.1 L249.2,57.2 L250.0,57.2 L250.8,57.2 L251.7,57.3 L252.5,57.3 L253.3,57.4 L254.1,57.4 L255.0,57.5 L255.8,57.5 L256.6,57.6 L257.4,57.6 L258.3,57.6 L259.1,57.7 L259.9,57.7 L260.7,57.8 L261.6,57.8 L262.4,57.9 L263.2,57.9 L264.1,58.0 L264.9,58.0 L265.7,58.0 L266.5,58.1 L267.4,58.1 L268.2,58.2 L269.0,58.2 L269.8,58.3 L270.7,58.3 L271.5,58.4 L272.3,58.4 L273.1,58.4 L274.0,58.5 L274.8,58.5 L275.6,58.6 L276.5,58.6 L277.3,58.7 L278.1,58.7 L278.9,58.7 L279.8,58.8 L280.6,58.8 L281.4,58.9 L282.2,58.9 L283.1,59.0 L283.9,59.0 L284.7,59.1 L285.5,59.1 L286.4,59.1 L287.2,59.2 L288.0,59.2 L288.9,59.3 L289.7,59.3 L290.5,59.4 L291.3,59.4 L292.2,59.5 L293.0,59.5 L293.8,59.5 L294.6,59.6 L295.5,59.6 L296.3,59.7 L297.1,59.7 L297.9,59.8 L298.8,59.8 L299.6,59.8 L300.4,59.9 L301.3,59.9 L302.1,60.0 L302.9,60.0 L303.7,60.1 L304.6,60.1 L305.4,60.2 L306.2,60.2 L307.0,60.2 L307.9,60.3 L308.7,60.3 L309.5,60.4 L310.3,60.4 L311.2,60.5 L312.0,60.5 L312.8,60.5 L313.7,60.6 L314.5,60.6 L315.3,60.7 L316.1,60.7 L317.0,60.8 L317.8,60.8 L318.6,60.9 L319.4,60.9 L320.3,60.9 L321.1,61.0 L321.9,61.0 L322.7,61.1 L323.6,61.1 L324.4,61.2 L325.2,61.2 L326.1,61.2 L326.9,61.3 L327.7,61.3 L328.5,61.4 L329.4,61.4 L330.2,61.5 L331.0,61.5 L331.8,61.6 L332.7,61.6 L333.5,61.6 L334.3,61.7 L335.1,61.7 L336.0,61.8 L336.8,61.8 L337.6,61.9 L338.5,61.9 L339.3,61.9 L340.1,62.0 L340.9,62.0 L341.8,62.1 L342.6,62.1 L343.4,62.2 L344.2,62.2 L345.1,62.3 L345.9,62.3 L346.7,62.3 L347.5,62.4 L348.4,62.4 L349.2,62.5 L350.0,62.5 L350.9,62.6 L351.7,62.6 L352.5,62.6 L353.3,62.7 L354.2,62.7 L355.0,62.8 L355.8,62.8 L356.6,62.9 L357.5,62.9 L358.3,63.0 L359.1,63.0 L359.9,63.0 L360.8,63.1 L361.6,63.1 L362.4,63.2 L363.3,63.2 L364.1,63.3 L364.9,63.3 L365.7,63.3 L366.6,63.4 L367.4,63.4 L368.2,63.5 L369.0,63.5 L369.9,63.6 L370.7,63.6 L371.5,63.7 L372.3,63.7 L373.2,63.7 L374.0,63.8 L374.8,63.8 L375.7,63.9 L376.5,63.9 L377.3,64.0 L378.1,64.0 L379.0,64.0 L379.8,64.1 L380.6,64.1 L381.4,64.2 L382.3,64.2 L383.1,64.3 L383.9,64.3 L384.7,64.3 L385.6,64.4 L386.4,64.4 L387.2,64.5 L388.1,64.5 L388.9,64.6 L389.7,64.6 L390.5,64.7 L391.4,64.7 L392.2,64.7 L393.0,64.8 L393.8,64.8 L394.7,64.9 L395.5,64.9 L396.3,65.0 L397.1,65.0 L398.0,65.0 L398.8,65.1 L399.6,65.1 L400.5,65.2 L401.3,65.2 L402.1,65.3 L402.9,65.3 L403.8,65.4 L404.6,65.4 L405.4,65.4 L406.2,65.5 L407.1,65.5 L407.9,65.6 L408.7,65.6 L409.5,65.7 L410.4,65.7 L411.2,65.7 L412.0,65.8 L412.9,65.8 L413.7,65.9 L414.5,65.9 L415.3,66.0 L416.2,66.0 L417.0,66.1 L417.8,66.1 L418.6,66.1 L419.5,66.2 L420.3,66.2 L421.1,66.3 L421.9,66.3 L422.8,66.4 L423.6,66.4 L424.4,66.4 L425.3,66.5 L426.1,66.5 L426.9,66.6 L427.7,66.6 L428.6,66.7 L429.4,66.7 L430.2,66.8 L431.0,66.8 L431.9,66.8 L432.7,66.9 L433.5,66.9 L434.3,67.0 L435.2,67.0 L436.0,67.1 L436.8,67.1 L437.7,67.1 L438.5,67.2 L439.3,67.2 L440.1,67.3 L441.0,67.3 L441.8,67.4 L442.6,67.4 L443.4,67.4 L444.3,67.5 L445.1,67.5 L445.9,67.6 L446.7,67.6 L447.6,67.7 L448.4,67.7 L449.2,67.8 L450.1,67.8 L450.9,67.8 L451.7,67.9 L452.5,67.9 L453.4,68.0 L454.2,68.0 L455.0,68.1 L455.8,68.1 L456.7,68.1 L457.5,68.2 L458.3,68.2 L459.1,68.3 L460.0,68.3 L460.8,68.4 L461.6,68.4 L462.5,68.5 L463.3,68.5 L464.1,68.5 L464.9,68.6 L465.8,68.6 L466.6,68.7 L467.4,68.7 L468.2,68.8 L469.1,68.8 L469.9,68.8 L470.7,68.9 L471.5,68.9 L472.4,69.0 L473.2,69.0 L474.0,69.1 L474.9,69.1 L475.7,69.2 L476.5,69.2 L477.3,69.2 L478.2,69.3 L479.0,69.3 L479.8,69.4 L480.6,69.4 L481.5,69.5 L482.3,69.5 L483.1,69.5 L483.9,69.6 L484.8,69.6 L485.6,69.7 L486.4,69.7 L487.3,69.8 L488.1,69.8 L488.9,69.8 L489.7,69.9 L490.6,69.9 L491.4,70.0 L492.2,70.0 L493.0,70.1 L493.9,70.1 L494.7,70.2 L495.5,70.2 L496.3,70.2 L497.2,70.3 L498.0,70.3 L498.8,70.4 L499.7,70.4 L500.5,70.5 L501.3,70.5 L502.1,70.5 L503.0,70.6 L503.8,70.6 L504.6,70.7 L505.4,70.7 L506.3,70.8 L507.1,70.8 L507.9,70.9 L508.7,70.9 L509.6,70.9 L510.4,71.0 L511.2,71.0 L512.1,71.1 L512.9,71.1 L513.7,71.2 L514.5,71.2 L515.4,71.2 L516.2,71.3 L517.0,71.3 L517.8,71.4 L518.7,71.4 L519.5,71.5 L520.3,71.5 L521.1,71.6 L522.0,71.6 L522.8,71.6 L523.6,71.7 L524.5,71.7 L525.3,71.8 L526.1,71.8 L526.9,71.9 L527.8,71.9 L528.6,71.9 L529.4,72.0 L530.2,72.0 L531.1,72.1 L531.9,72.1 L532.7,72.2 L533.5,72.2 L534.4,72.2 L535.2,72.3 L536.0,72.3 L536.9,72.4 L537.7,72.4 L538.5,72.5 L539.3,72.5 L540.2,72.6 L541.0,72.6 L541.8,72.6 L542.6,72.7 L543.5,72.7 L544.3,72.8 L545.1,72.8 L545.9,72.9 L546.8,72.9 L547.6,72.9 L548.4,73.0 L549.3,73.0 L550.1,73.1 L550.9,73.1 L551.7,73.2 L552.6,73.2 L553.4,73.3 L554.2,73.3 L555.0,73.3 L555.9,73.4 L556.7,73.4 L557.5,73.5 L558.3,73.5 L559.2,73.6 L560.0,73.6" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="560.0" cy="73.6" r="4" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><path d="M64.0,30.0 L64.8,34.4 L65.7,36.8 L66.5,38.1 L67.3,39.1 L68.1,39.9 L69.0,40.6 L69.8,41.1 L70.6,41.7 L71.4,42.2 L72.3,42.6 L73.1,43.1 L73.9,43.5 L74.7,43.9 L75.6,44.3 L76.4,44.6 L77.2,45.0 L78.1,45.3 L78.9,45.7 L79.7,46.0 L80.5,46.3 L81.4,46.6 L82.2,46.9 L83.0,47.2 L83.8,47.5 L84.7,47.8 L85.5,48.1 L86.3,48.4 L87.1,48.7 L88.0,49.0 L88.8,49.2 L89.6,49.5 L90.5,49.7 L91.3,50.0 L92.1,50.3 L92.9,50.5 L93.8,50.8 L94.6,51.0 L95.4,51.2 L96.2,51.5 L97.1,51.7 L97.9,51.9 L98.7,52.1 L99.5,52.4 L100.4,52.6 L101.2,52.8 L102.0,53.0 L102.9,53.2 L103.7,53.4 L104.5,53.6 L105.3,53.8 L106.2,54.0 L107.0,54.2 L107.8,54.4 L108.6,54.5 L109.5,54.7 L110.3,54.9 L111.1,55.0 L111.9,55.2 L112.8,55.4 L113.6,55.5 L114.4,55.7 L115.3,55.8 L116.1,56.0 L116.9,56.1 L117.7,56.3 L118.6,56.4 L119.4,56.6 L120.2,56.7 L121.0,56.8 L121.9,57.0 L122.7,57.1 L123.5,57.2 L124.3,57.4 L125.2,57.5 L126.0,57.6 L126.8,57.7 L127.7,57.8 L128.5,58.0 L129.3,58.1 L130.1,58.2 L131.0,58.3 L131.8,58.4 L132.6,58.5 L133.4,58.6 L134.3,58.7 L135.1,58.8 L135.9,58.9 L136.7,59.0 L137.6,59.1 L138.4,59.2 L139.2,59.3 L140.1,59.4 L140.9,59.5 L141.7,59.6 L142.5,59.7 L143.4,59.8 L144.2,59.9 L145.0,60.0 L145.8,60.1 L146.7,60.2 L147.5,60.3 L148.3,60.4 L149.1,60.5 L150.0,60.6 L150.8,60.7 L151.6,60.8 L152.5,60.8 L153.3,60.9 L154.1,61.0 L154.9,61.1 L155.8,61.2 L156.6,61.3 L157.4,61.4 L158.2,61.5 L159.1,61.6 L159.9,61.6 L160.7,61.7 L161.5,61.8 L162.4,61.9 L163.2,62.0 L164.0,62.1 L164.9,62.2 L165.7,62.3 L166.5,62.3 L167.3,62.4 L168.2,62.5 L169.0,62.6 L169.8,62.7 L170.6,62.8 L171.5,62.9 L172.3,62.9 L173.1,63.0 L173.9,63.1 L174.8,63.2 L175.6,63.3 L176.4,63.4 L177.3,63.5 L178.1,63.5 L178.9,63.6 L179.7,63.7 L180.6,63.8 L181.4,63.9 L182.2,64.0 L183.0,64.1 L183.9,64.2 L184.7,64.2 L185.5,64.3 L186.3,64.4 L187.2,64.5 L188.0,64.6 L188.8,64.7 L189.7,64.8 L190.5,64.8 L191.3,64.9 L192.1,65.0 L193.0,65.1 L193.8,65.2 L194.6,65.3 L195.4,65.4 L196.3,65.4 L197.1,65.5 L197.9,65.6 L198.7,65.7 L199.6,65.8 L200.4,65.9 L201.2,66.0 L202.1,66.0 L202.9,66.1 L203.7,66.2 L204.5,66.3 L205.4,66.4 L206.2,66.5 L207.0,66.6 L207.8,66.7 L208.7,66.7 L209.5,66.8 L210.3,66.9 L211.1,67.0 L212.0,67.1 L212.8,67.2 L213.6,67.3 L214.5,67.3 L215.3,67.4 L216.1,67.5 L216.9,67.6 L217.8,67.7 L218.6,67.8 L219.4,67.9 L220.2,68.0 L221.1,68.0 L221.9,68.1 L222.7,68.2 L223.5,68.3 L224.4,68.4 L225.2,68.5 L226.0,68.6 L226.9,68.6 L227.7,68.7 L228.5,68.8 L229.3,68.9 L230.2,69.0 L231.0,69.1 L231.8,69.2 L232.6,69.3 L233.5,69.3 L234.3,69.4 L235.1,69.5 L235.9,69.6 L236.8,69.7 L237.6,69.8 L238.4,69.9 L239.3,69.9 L240.1,70.0 L240.9,70.1 L241.7,70.2 L242.6,70.3 L243.4,70.4 L244.2,70.5 L245.0,70.6 L245.9,70.6 L246.7,70.7 L247.5,70.8 L248.3,70.9 L249.2,71.0 L250.0,71.1 L250.8,71.2 L251.7,71.3 L252.5,71.3 L253.3,71.4 L254.1,71.5 L255.0,71.6 L255.8,71.7 L256.6,71.8 L257.4,71.9 L258.3,71.9 L259.1,72.0 L259.9,72.1 L260.7,72.2 L261.6,72.3 L262.4,72.4 L263.2,72.5 L264.1,72.6 L264.9,72.6 L265.7,72.7 L266.5,72.8 L267.4,72.9 L268.2,73.0 L269.0,73.1 L269.8,73.2 L270.7,73.3 L271.5,73.3 L272.3,73.4 L273.1,73.5 L274.0,73.6 L274.8,73.7 L275.6,73.8 L276.5,73.9 L277.3,74.0 L278.1,74.0 L278.9,74.1 L279.8,74.2 L280.6,74.3 L281.4,74.4 L282.2,74.5 L283.1,74.6 L283.9,74.7 L284.7,74.7 L285.5,74.8 L286.4,74.9 L287.2,75.0 L288.0,75.1 L288.9,75.2 L289.7,75.3 L290.5,75.3 L291.3,75.4 L292.2,75.5 L293.0,75.6 L293.8,75.7 L294.6,75.8 L295.5,75.9 L296.3,76.0 L297.1,76.0 L297.9,76.1 L298.8,76.2 L299.6,76.3 L300.4,76.4 L301.3,76.5 L302.1,76.6 L302.9,76.7 L303.7,76.7 L304.6,76.8 L305.4,76.9 L306.2,77.0 L307.0,77.1 L307.9,77.2 L308.7,77.3 L309.5,77.4 L310.3,77.4 L311.2,77.5 L312.0,77.6 L312.8,77.7 L313.7,77.8 L314.5,77.9 L315.3,78.0 L316.1,78.1 L317.0,78.1 L317.8,78.2 L318.6,78.3 L319.4,78.4 L320.3,78.5 L321.1,78.6 L321.9,78.7 L322.7,78.8 L323.6,78.8 L324.4,78.9 L325.2,79.0 L326.1,79.1 L326.9,79.2 L327.7,79.3 L328.5,79.4 L329.4,79.4 L330.2,79.5 L331.0,79.6 L331.8,79.7 L332.7,79.8 L333.5,79.9 L334.3,80.0 L335.1,80.1 L336.0,80.1 L336.8,80.2 L337.6,80.3 L338.5,80.4 L339.3,80.5 L340.1,80.6 L340.9,80.7 L341.8,80.8 L342.6,80.8 L343.4,80.9 L344.2,81.0 L345.1,81.1 L345.9,81.2 L346.7,81.3 L347.5,81.4 L348.4,81.5 L349.2,81.5 L350.0,81.6 L350.9,81.7 L351.7,81.8 L352.5,81.9 L353.3,82.0 L354.2,82.1 L355.0,82.2 L355.8,82.2 L356.6,82.3 L357.5,82.4 L358.3,82.5 L359.1,82.6 L359.9,82.7 L360.8,82.8 L361.6,82.9 L362.4,82.9 L363.3,83.0 L364.1,83.1 L364.9,83.2 L365.7,83.3 L366.6,83.4 L367.4,83.5 L368.2,83.6 L369.0,83.6 L369.9,83.7 L370.7,83.8 L371.5,83.9 L372.3,84.0 L373.2,84.1 L374.0,84.2 L374.8,84.2 L375.7,84.3 L376.5,84.4 L377.3,84.5 L378.1,84.6 L379.0,84.7 L379.8,84.8 L380.6,84.9 L381.4,84.9 L382.3,85.0 L383.1,85.1 L383.9,85.2 L384.7,85.3 L385.6,85.4 L386.4,85.5 L387.2,85.6 L388.1,85.6 L388.9,85.7 L389.7,85.8 L390.5,85.9 L391.4,86.0 L392.2,86.1 L393.0,86.2 L393.8,86.3 L394.7,86.3 L395.5,86.4 L396.3,86.5 L397.1,86.6 L398.0,86.7 L398.8,86.8 L399.6,86.9 L400.5,87.0 L401.3,87.0 L402.1,87.1 L402.9,87.2 L403.8,87.3 L404.6,87.4 L405.4,87.5 L406.2,87.6 L407.1,87.7 L407.9,87.7 L408.7,87.8 L409.5,87.9 L410.4,88.0 L411.2,88.1 L412.0,88.2 L412.9,88.3 L413.7,88.4 L414.5,88.4 L415.3,88.5 L416.2,88.6 L417.0,88.7 L417.8,88.8 L418.6,88.9 L419.5,89.0 L420.3,89.1 L421.1,89.1 L421.9,89.2 L422.8,89.3 L423.6,89.4 L424.4,89.5 L425.3,89.6 L426.1,89.7 L426.9,89.7 L427.7,89.8 L428.6,89.9 L429.4,90.0 L430.2,90.1 L431.0,90.2 L431.9,90.3 L432.7,90.4 L433.5,90.4 L434.3,90.5 L435.2,90.6 L436.0,90.7 L436.8,90.8 L437.7,90.9 L438.5,91.0 L439.3,91.1 L440.1,91.1 L441.0,91.2 L441.8,91.3 L442.6,91.4 L443.4,91.5 L444.3,91.6 L445.1,91.7 L445.9,91.8 L446.7,91.8 L447.6,91.9 L448.4,92.0 L449.2,92.1 L450.1,92.2 L450.9,92.3 L451.7,92.4 L452.5,92.5 L453.4,92.5 L454.2,92.6 L455.0,92.7 L455.8,92.8 L456.7,92.9 L457.5,93.0 L458.3,93.1 L459.1,93.2 L460.0,93.2 L460.8,93.3 L461.6,93.4 L462.5,93.5 L463.3,93.6 L464.1,93.7 L464.9,93.8 L465.8,93.9 L466.6,93.9 L467.4,94.0 L468.2,94.1 L469.1,94.2 L469.9,94.3 L470.7,94.4 L471.5,94.5 L472.4,94.5 L473.2,94.6 L474.0,94.7 L474.9,94.8 L475.7,94.9 L476.5,95.0 L477.3,95.1 L478.2,95.2 L479.0,95.2 L479.8,95.3 L480.6,95.4 L481.5,95.5 L482.3,95.6 L483.1,95.7 L483.9,95.8 L484.8,95.9 L485.6,95.9 L486.4,96.0 L487.3,96.1 L488.1,96.2 L488.9,96.3 L489.7,96.4 L490.6,96.5 L491.4,96.6 L492.2,96.6 L493.0,96.7 L493.9,96.8 L494.7,96.9 L495.5,97.0 L496.3,97.1 L497.2,97.2 L498.0,97.3 L498.8,97.3 L499.7,97.4 L500.5,97.5 L501.3,97.6 L502.1,97.7 L503.0,97.8 L503.8,97.9 L504.6,98.0 L505.4,98.0 L506.3,98.1 L507.1,98.2 L507.9,98.3 L508.7,98.4 L509.6,98.5 L510.4,98.6 L511.2,98.7 L512.1,98.7 L512.9,98.8 L513.7,98.9 L514.5,99.0 L515.4,99.1 L516.2,99.2 L517.0,99.3 L517.8,99.4 L518.7,99.4 L519.5,99.5 L520.3,99.6 L521.1,99.7 L522.0,99.8 L522.8,99.9 L523.6,100.0 L524.5,100.0 L525.3,100.1 L526.1,100.2 L526.9,100.3 L527.8,100.4 L528.6,100.5 L529.4,100.6 L530.2,100.7 L531.1,100.7 L531.9,100.8 L532.7,100.9 L533.5,101.0 L534.4,101.1 L535.2,101.2 L536.0,101.3 L536.9,101.4 L537.7,101.4 L538.5,101.5 L539.3,101.6 L540.2,101.7 L541.0,101.8 L541.8,101.9 L542.6,102.0 L543.5,102.1 L544.3,102.1 L545.1,102.2 L545.9,102.3 L546.8,102.4 L547.6,102.5 L548.4,102.6 L549.3,102.7 L550.1,102.8 L550.9,102.8 L551.7,102.9 L552.6,103.0 L553.4,103.1 L554.2,103.2 L555.0,103.3 L555.9,103.4 L556.7,103.5 L557.5,103.5 L558.3,103.6 L559.2,103.7 L560.0,103.8" fill="none" stroke="#eb6834" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="560.0" cy="103.8" r="4" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><path d="M64.0,30.0 L64.8,30.2 L65.7,31.4 L66.5,32.4 L67.3,33.3 L68.1,34.8 L69.0,35.4 L69.8,35.6 L70.6,37.6 L71.4,38.0 L72.3,39.3 L73.1,38.6 L73.9,39.1 L74.7,42.0 L75.6,42.8 L76.4,42.5 L77.2,44.9 L78.1,45.1 L78.9,46.0 L79.7,45.6 L80.5,45.6 L81.4,44.7 L82.2,49.7 L83.0,51.6 L83.8,52.6 L84.7,47.6 L85.5,54.5 L86.3,55.6 L87.1,59.4 L88.0,61.9 L88.8,65.4 L89.6,63.5 L90.5,68.9 L91.3,66.4 L92.1,68.0 L92.9,69.4 L93.8,70.8 L94.6,71.6 L95.4,73.2 L96.2,74.3 L97.1,76.5 L97.9,77.8 L98.7,78.9 L99.5,80.7 L100.4,81.6 L101.2,82.8 L102.0,84.9 L102.9,87.5 L103.7,88.1 L104.5,91.3 L105.3,94.5 L106.2,95.3 L107.0,96.7 L107.8,97.8 L108.6,98.1 L109.5,101.1 L110.3,103.4 L111.1,105.3 L111.9,103.1 L112.8,106.2 L113.6,107.2 L114.4,109.2 L115.3,111.1 L116.1,113.8 L116.9,114.3 L117.7,118.2 L118.6,118.6 L119.4,120.4 L120.2,122.3 L121.0,124.1 L121.9,125.6 L122.7,127.4 L123.5,128.9 L124.3,131.0 L125.2,132.7 L126.0,134.1 L126.8,136.0 L127.7,137.2 L128.5,138.3 L129.3,139.8 L130.1,141.8 L131.0,142.6 L131.8,144.8 L132.6,147.4 L133.4,149.0 L134.3,150.9 L135.1,152.6 L135.9,153.5 L136.7,156.1 L137.6,158.7 L138.4,161.6 L139.2,160.8 L140.1,163.3 L140.9,164.3 L141.7,166.0 L142.5,167.5 L143.4,169.7 L144.2,170.5 L145.0,173.5 L145.8,174.5 L146.7,176.3 L147.5,178.0 L148.3,179.9 L149.1,181.5 L150.0,183.3 L150.8,184.9 L151.6,187.0 L152.5,189.0 L153.3,190.8 L154.1,193.0 L154.9,194.6 L155.8,196.1 L156.6,197.7 L157.4,199.6 L158.2,200.5 L159.1,202.1 L159.9,204.3 L160.7,205.9 L161.5,207.7 L162.4,209.4 L163.2,210.3 L164.0,212.3 L164.9,214.7 L165.7,217.9 L166.5,218.2 L167.3,220.7 L168.2,222.1 L169.0,223.8 L169.8,225.4 L170.6,227.6 L171.5,228.5 L172.3,231.2 L173.1,232.5 L173.9,234.2 L174.8,235.9 L175.6,237.7 L176.4,239.3 L177.3,240.9 L178.1,242.4 L178.9,244.3 L179.7,246.1 L180.6,247.9 L181.4,250.0 L182.2,252.0" fill="none" stroke="#1baf7a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="182.2" cy="252.0" r="4" fill="#1baf7a" stroke="#ffffff" stroke-width="2"/><path d="M64.0,30.0 L64.8,33.7 L65.7,36.0 L66.5,37.8 L67.3,39.1 L68.1,40.3 L69.0,41.8 L69.8,43.3 L70.6,44.3 L71.4,45.1 L72.3,46.1 L73.1,47.2 L73.9,48.8 L74.7,50.2 L75.6,51.3 L76.4,52.1 L77.2,53.4 L78.1,54.6 L78.9,55.7 L79.7,57.0 L80.5,57.8 L81.4,58.6 L82.2,59.4 L83.0,59.9 L83.8,60.3 L84.7,60.9 L85.5,61.3 L86.3,61.5 L87.1,61.8 L88.0,62.0 L88.8,62.2 L89.6,63.0 L90.5,313.1" fill="none" stroke="#eda100" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="90.5" cy="313.1" r="4" fill="#eda100" stroke="#ffffff" stroke-width="2"/><text x="570.0" y="77.6" class="viz-label">Jacobi</text><text x="570.0" y="107.8" class="viz-label">GS</text><text x="192.2" y="256.0" class="viz-label">SOR</text><text x="100.5" y="317.1" class="viz-label">CG</text><line x1="0" x2="0" y1="30" y2="340" class="viz-crosshair" visibility="hidden"/></svg>
+<div class="viz-tooltip" hidden></div>
+</div>
+<figcaption>Relative error of four iterative methods for the 1D Poisson matrix with n = 32, on a log scale. SOR and CG stop when the error is below 10<sup>−10</sup>; "done" in the table means the method has stopped. Hover over the chart, or focus it and use the arrow keys, to read the values.</figcaption>
+<details class="viz-table"><summary>Show the numbers</summary><table><thead><tr><th>k</th><th>Jacobi</th><th>Gauss–Seidel</th><th>SOR, optimal w</th><th>conjugate gradient</th></tr></thead><tbody><tr><td>0</td><td>1</td><td>1</td><td>1</td><td>1</td></tr><tr><td>1</td><td>0.715</td><td>0.632</td><td>0.982</td><td>0.677</td></tr><tr><td>5</td><td>0.49</td><td>0.358</td><td>0.604</td><td>0.342</td></tr><tr><td>10</td><td>0.395</td><td>0.269</td><td>0.379</td><td>0.188</td></tr><tr><td>20</td><td>0.301</td><td>0.183</td><td>0.197</td><td>0.0554</td></tr><tr><td>31</td><td>0.245</td><td>0.132</td><td>0.0307</td><td>0.0323</td></tr><tr><td>32</td><td>0.241</td><td>0.128</td><td>0.0175</td><td>1.64e-13</td></tr><tr><td>50</td><td>0.188</td><td>0.0842</td><td>1.23e-3</td><td>done</td></tr><tr><td>100</td><td>0.117</td><td>0.0433</td><td>2.48e-7</td><td>done</td></tr><tr><td>143</td><td>0.0888</td><td>0.0292</td><td>9.45e-11</td><td>done</td></tr><tr><td>200</td><td>0.0665</td><td>0.0175</td><td>done</td><td>done</td></tr><tr><td>300</td><td>0.0419</td><td>7.07e-3</td><td>done</td><td>done</td></tr><tr><td>400</td><td>0.0266</td><td>2.85e-3</td><td>done</td><td>done</td></tr><tr><td>500</td><td>0.0169</td><td>1.15e-3</td><td>done</td><td>done</td></tr><tr><td>600</td><td>0.0107</td><td>4.65e-4</td><td>done</td><td>done</td></tr></tbody></table></details>
+<script>(() => {const fig = document.currentScript.closest('figure');const svg = fig.querySelector('svg');const line = svg.querySelector('.viz-crosshair');const tip = fig.querySelector('.viz-tooltip');const names = ["Jacobi", "Gauss–Seidel", "SOR", "CG"]; const colors = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"];const rows = [["1", "1", "1", "1"], ["0.715", "0.632", "0.982", "0.677"], ["0.613", "0.495", "0.867", "0.536"], ["0.558", "0.429", "0.776", "0.445"], ["0.52", "0.388", "0.706", "0.389"], ["0.49", "0.358", "0.604", "0.342"], ["0.466", "0.334", "0.57", "0.292"], ["0.445", "0.314", "0.56", "0.25"], ["0.426", "0.297", "0.453", "0.226"], ["0.41", "0.282", "0.436", "0.208"], ["0.395", "0.269", "0.379", "0.188"], ["0.382", "0.257", "0.407", "0.167"], ["0.37", "0.246", "0.387", "0.141"], ["0.359", "0.236", "0.287", "0.122"], ["0.348", "0.227", "0.264", "0.109"], ["0.339", "0.218", "0.273", "0.101"], ["0.33", "0.21", "0.212", "0.0874"], ["0.322", "0.203", "0.207", "0.0772"], ["0.315", "0.196", "0.19", "0.0689"], ["0.307", "0.189", "0.197", "0.0603"], ["0.301", "0.183", "0.197", "0.0554"], ["0.294", "0.177", "0.217", "0.0512"], ["0.288", "0.172", "0.128", "0.047"], ["0.283", "0.166", "0.106", "0.0448"], ["0.277", "0.161", "0.0951", "0.043"], ["0.272", "0.157", "0.16", "0.04"], ["0.267", "0.152", "0.0786", "0.0384"], ["0.262", "0.148", "0.0698", "0.0378"], ["0.258", "0.143", "0.0471", "0.0365"], ["0.253", "0.139", "0.0362", "0.0359"], ["0.249", "0.135", "0.0252", "0.035"], ["0.245", "0.132", "0.0307", "0.0323"], ["0.241", "0.128", "0.0175", "1.64e-13"], ["0.237", "0.125", "0.0227", "done"], ["0.234", "0.122", "0.0192", "done"], ["0.23", "0.119", "0.0167", "done"], ["0.227", "0.116", "0.0144", "done"], ["0.224", "0.113", "0.0132", "done"], ["0.22", "0.11", "0.0112", "done"], ["0.217", "0.107", "9.93e-3", "done"], ["0.214", "0.105", "7.96e-3", "done"], ["0.211", "0.102", "6.96e-3", "done"], ["0.208", "0.1", "6.20e-3", "done"], ["0.206", "0.0977", "5.13e-3", "done"], ["0.203", "0.0956", "4.67e-3", "done"], ["0.2", "0.0935", "4.12e-3", "done"], ["0.198", "0.0915", "3.32e-3", "done"], ["0.195", "0.0896", "2.53e-3", "done"], ["0.193", "0.0877", "2.38e-3", "done"], ["0.19", "0.086", "1.71e-3", "done"], ["0.188", "0.0842", "1.23e-3", "done"], ["0.186", "0.0826", "1.12e-3", "done"], ["0.183", "0.081", "9.76e-4", "done"], ["0.181", "0.0795", "8.64e-4", "done"], ["0.179", "0.078", "8.44e-4", "done"], ["0.177", "0.0766", "6.15e-4", "done"], ["0.175", "0.0752", "4.85e-4", "done"], ["0.173", "0.0739", "3.97e-4", "done"], ["0.171", "0.0727", "4.99e-4", "done"], ["0.169", "0.0714", "3.63e-4", "done"], ["0.167", "0.0703", "3.27e-4", "done"], ["0.165", "0.0691", "2.65e-4", "done"], ["0.164", "0.068", "2.18e-4", "done"], ["0.162", "0.067", "1.65e-4", "done"], ["0.16", "0.066", "1.55e-4", "done"], ["0.159", "0.065", "1.04e-4", "done"], ["0.157", "0.064", "1.00e-4", "done"], ["0.155", "0.0631", "8.23e-5", "done"], ["0.154", "0.0622", "6.82e-5", "done"], ["0.152", "0.0613", "5.63e-5", "done"], ["0.151", "0.0605", "4.83e-5", "done"], ["0.149", "0.0597", "4.00e-5", "done"], ["0.148", "0.0589", "3.42e-5", "done"], ["0.146", "0.0581", "2.76e-5", "done"], ["0.145", "0.0574", "2.31e-5", "done"], ["0.144", "0.0567", "1.98e-5", "done"], ["0.142", "0.056", "1.64e-5", "done"], ["0.141", "0.0553", "1.45e-5", "done"], ["0.14", "0.0546", "1.29e-5", "done"], ["0.138", "0.054", "1.10e-5", "done"], ["0.137", "0.0533", "8.94e-6", "done"], ["0.136", "0.0527", "8.21e-6", "done"], ["0.135", "0.0521", "6.57e-6", "done"], ["0.134", "0.0516", "5.00e-6", "done"], ["0.132", "0.051", "4.21e-6", "done"], ["0.131", "0.0504", "3.47e-6", "done"], ["0.13", "0.0499", "2.90e-6", "done"], ["0.129", "0.0493", "2.64e-6", "done"], ["0.128", "0.0488", "2.02e-6", "done"], ["0.127", "0.0483", "1.54e-6", "done"], ["0.126", "0.0478", "1.14e-6", "done"], ["0.125", "0.0473", "1.23e-6", "done"], ["0.124", "0.0468", "9.58e-7", "done"], ["0.123", "0.0464", "8.58e-7", "done"], ["0.122", "0.0459", "7.24e-7", "done"], ["0.121", "0.0454", "6.17e-7", "done"], ["0.12", "0.045", "4.91e-7", "done"], ["0.119", "0.0445", "4.51e-7", "done"], ["0.118", "0.0441", "3.31e-7", "done"], ["0.117", "0.0437", "2.97e-7", "done"], ["0.117", "0.0433", "2.48e-7", "done"], ["0.116", "0.0428", "2.06e-7", "done"], ["0.115", "0.0424", "1.70e-7", "done"], ["0.114", "0.042", "1.44e-7", "done"], ["0.113", "0.0416", "1.19e-7", "done"], ["0.112", "0.0412", "1.01e-7", "done"], ["0.112", "0.0409", "8.11e-8", "done"], ["0.111", "0.0405", "6.62e-8", "done"], ["0.11", "0.0401", "5.47e-8", "done"], ["0.109", "0.0397", "4.37e-8", "done"], ["0.109", "0.0394", "3.67e-8", "done"], ["0.108", "0.039", "3.16e-8", "done"], ["0.107", "0.0386", "2.68e-8", "done"], ["0.106", "0.0383", "2.20e-8", "done"], ["0.106", "0.0379", "2.01e-8", "done"], ["0.105", "0.0376", "1.69e-8", "done"], ["0.104", "0.0372", "1.35e-8", "done"], ["0.104", "0.0369", "1.14e-8", "done"], ["0.103", "0.0366", "9.48e-9", "done"], ["0.102", "0.0362", "7.93e-9", "done"], ["0.102", "0.0359", "7.19e-9", "done"], ["0.101", "0.0356", "5.83e-9", "done"], ["0.1", "0.0353", "4.55e-9", "done"], ["0.0998", "0.035", "3.28e-9", "done"], ["0.0992", "0.0346", "3.15e-9", "done"], ["0.0986", "0.0343", "2.45e-9", "done"], ["0.098", "0.034", "2.11e-9", "done"], ["0.0974", "0.0337", "1.76e-9", "done"], ["0.0968", "0.0334", "1.50e-9", "done"], ["0.0962", "0.0331", "1.20e-9", "done"], ["0.0957", "0.0328", "1.08e-9", "done"], ["0.0951", "0.0325", "8.19e-10", "done"], ["0.0945", "0.0322", "7.15e-10", "done"], ["0.094", "0.0319", "5.99e-10", "done"], ["0.0934", "0.0317", "5.02e-10", "done"], ["0.0929", "0.0314", "4.18e-10", "done"], ["0.0924", "0.0311", "3.55e-10", "done"], ["0.0918", "0.0308", "2.98e-10", "done"], ["0.0913", "0.0305", "2.55e-10", "done"], ["0.0908", "0.0303", "2.11e-10", "done"], ["0.0903", "0.03", "1.75e-10", "done"], ["0.0898", "0.0297", "1.45e-10", "done"], ["0.0893", "0.0295", "1.16e-10", "done"], ["0.0888", "0.0292", "9.45e-11", "done"], ["0.0883", "0.0289", "done", "done"], ["0.0878", "0.0287", "done", "done"], ["0.0873", "0.0284", "done", "done"], ["0.0868", "0.0282", "done", "done"], ["0.0864", "0.0279", "done", "done"], ["0.0859", "0.0277", "done", "done"], ["0.0854", "0.0274", "done", "done"], ["0.085", "0.0272", "done", "done"], ["0.0845", "0.0269", "done", "done"], ["0.0841", "0.0267", "done", "done"], ["0.0836", "0.0265", "done", "done"], ["0.0832", "0.0262", "done", "done"], ["0.0828", "0.026", "done", "done"], ["0.0823", "0.0258", "done", "done"], ["0.0819", "0.0255", "done", "done"], ["0.0815", "0.0253", "done", "done"], ["0.081", "0.0251", "done", "done"], ["0.0806", "0.0249", "done", "done"], ["0.0802", "0.0246", "done", "done"], ["0.0798", "0.0244", "done", "done"], ["0.0794", "0.0242", "done", "done"], ["0.079", "0.024", "done", "done"], ["0.0786", "0.0238", "done", "done"], ["0.0782", "0.0236", "done", "done"], ["0.0778", "0.0233", "done", "done"], ["0.0774", "0.0231", "done", "done"], ["0.077", "0.0229", "done", "done"], ["0.0766", "0.0227", "done", "done"], ["0.0762", "0.0225", "done", "done"], ["0.0759", "0.0223", "done", "done"], ["0.0755", "0.0221", "done", "done"], ["0.0751", "0.0219", "done", "done"], ["0.0747", "0.0217", "done", "done"], ["0.0744", "0.0215", "done", "done"], ["0.074", "0.0213", "done", "done"], ["0.0736", "0.0211", "done", "done"], ["0.0733", "0.021", "done", "done"], ["0.0729", "0.0208", "done", "done"], ["0.0725", "0.0206", "done", "done"], ["0.0722", "0.0204", "done", "done"], ["0.0718", "0.0202", "done", "done"], ["0.0715", "0.02", "done", "done"], ["0.0711", "0.0199", "done", "done"], ["0.0708", "0.0197", "done", "done"], ["0.0705", "0.0195", "done", "done"], ["0.0701", "0.0193", "done", "done"], ["0.0698", "0.0192", "done", "done"], ["0.0694", "0.019", "done", "done"], ["0.0691", "0.0188", "done", "done"], ["0.0688", "0.0186", "done", "done"], ["0.0684", "0.0185", "done", "done"], ["0.0681", "0.0183", "done", "done"], ["0.0678", "0.0181", "done", "done"], ["0.0675", "0.018", "done", "done"], ["0.0671", "0.0178", "done", "done"], ["0.0668", "0.0177", "done", "done"], ["0.0665", "0.0175", "done", "done"], ["0.0662", "0.0173", "done", "done"], ["0.0659", "0.0172", "done", "done"], ["0.0656", "0.017", "done", "done"], ["0.0653", "0.0169", "done", "done"], ["0.0649", "0.0167", "done", "done"], ["0.0646", "0.0166", "done", "done"], ["0.0643", "0.0164", "done", "done"], ["0.064", "0.0163", "done", "done"], ["0.0637", "0.0161", "done", "done"], ["0.0634", "0.016", "done", "done"], ["0.0631", "0.0158", "done", "done"], ["0.0628", "0.0157", "done", "done"], ["0.0625", "0.0156", "done", "done"], ["0.0622", "0.0154", "done", "done"], ["0.062", "0.0153", "done", "done"], ["0.0617", "0.0151", "done", "done"], ["0.0614", "0.015", "done", "done"], ["0.0611", "0.0149", "done", "done"], ["0.0608", "0.0147", "done", "done"], ["0.0605", "0.0146", "done", "done"], ["0.0602", "0.0145", "done", "done"], ["0.06", "0.0143", "done", "done"], ["0.0597", "0.0142", "done", "done"], ["0.0594", "0.0141", "done", "done"], ["0.0591", "0.014", "done", "done"], ["0.0589", "0.0138", "done", "done"], ["0.0586", "0.0137", "done", "done"], ["0.0583", "0.0136", "done", "done"], ["0.058", "0.0135", "done", "done"], ["0.0578", "0.0133", "done", "done"], ["0.0575", "0.0132", "done", "done"], ["0.0572", "0.0131", "done", "done"], ["0.057", "0.013", "done", "done"], ["0.0567", "0.0129", "done", "done"], ["0.0564", "0.0128", "done", "done"], ["0.0562", "0.0126", "done", "done"], ["0.0559", "0.0125", "done", "done"], ["0.0557", "0.0124", "done", "done"], ["0.0554", "0.0123", "done", "done"], ["0.0552", "0.0122", "done", "done"], ["0.0549", "0.0121", "done", "done"], ["0.0547", "0.012", "done", "done"], ["0.0544", "0.0119", "done", "done"], ["0.0542", "0.0118", "done", "done"], ["0.0539", "0.0116", "done", "done"], ["0.0537", "0.0115", "done", "done"], ["0.0534", "0.0114", "done", "done"], ["0.0532", "0.0113", "done", "done"], ["0.0529", "0.0112", "done", "done"], ["0.0527", "0.0111", "done", "done"], ["0.0524", "0.011", "done", "done"], ["0.0522", "0.0109", "done", "done"], ["0.052", "0.0108", "done", "done"], ["0.0517", "0.0107", "done", "done"], ["0.0515", "0.0106", "done", "done"], ["0.0512", "0.0105", "done", "done"], ["0.051", "0.0104", "done", "done"], ["0.0508", "0.0104", "done", "done"], ["0.0505", "0.0103", "done", "done"], ["0.0503", "0.0102", "done", "done"], ["0.0501", "0.0101", "done", "done"], ["0.0499", "9.98e-3", "done", "done"], ["0.0496", "9.89e-3", "done", "done"], ["0.0494", "9.80e-3", "done", "done"], ["0.0492", "9.71e-3", "done", "done"], ["0.049", "9.63e-3", "done", "done"], ["0.0487", "9.54e-3", "done", "done"], ["0.0485", "9.45e-3", "done", "done"], ["0.0483", "9.37e-3", "done", "done"], ["0.0481", "9.28e-3", "done", "done"], ["0.0478", "9.20e-3", "done", "done"], ["0.0476", "9.12e-3", "done", "done"], ["0.0474", "9.04e-3", "done", "done"], ["0.0472", "8.95e-3", "done", "done"], ["0.047", "8.87e-3", "done", "done"], ["0.0468", "8.79e-3", "done", "done"], ["0.0466", "8.71e-3", "done", "done"], ["0.0463", "8.63e-3", "done", "done"], ["0.0461", "8.56e-3", "done", "done"], ["0.0459", "8.48e-3", "done", "done"], ["0.0457", "8.40e-3", "done", "done"], ["0.0455", "8.33e-3", "done", "done"], ["0.0453", "8.25e-3", "done", "done"], ["0.0451", "8.18e-3", "done", "done"], ["0.0449", "8.10e-3", "done", "done"], ["0.0447", "8.03e-3", "done", "done"], ["0.0445", "7.96e-3", "done", "done"], ["0.0443", "7.89e-3", "done", "done"], ["0.0441", "7.81e-3", "done", "done"], ["0.0439", "7.74e-3", "done", "done"], ["0.0437", "7.67e-3", "done", "done"], ["0.0435", "7.60e-3", "done", "done"], ["0.0433", "7.54e-3", "done", "done"], ["0.0431", "7.47e-3", "done", "done"], ["0.0429", "7.40e-3", "done", "done"], ["0.0427", "7.33e-3", "done", "done"], ["0.0425", "7.27e-3", "done", "done"], ["0.0423", "7.20e-3", "done", "done"], ["0.0421", "7.14e-3", "done", "done"], ["0.0419", "7.07e-3", "done", "done"], ["0.0417", "7.01e-3", "done", "done"], ["0.0415", "6.95e-3", "done", "done"], ["0.0413", "6.88e-3", "done", "done"], ["0.0412", "6.82e-3", "done", "done"], ["0.041", "6.76e-3", "done", "done"], ["0.0408", "6.70e-3", "done", "done"], ["0.0406", "6.64e-3", "done", "done"], ["0.0404", "6.58e-3", "done", "done"], ["0.0402", "6.52e-3", "done", "done"], ["0.0401", "6.46e-3", "done", "done"], ["0.0399", "6.40e-3", "done", "done"], ["0.0397", "6.34e-3", "done", "done"], ["0.0395", "6.29e-3", "done", "done"], ["0.0393", "6.23e-3", "done", "done"], ["0.0392", "6.17e-3", "done", "done"], ["0.039", "6.12e-3", "done", "done"], ["0.0388", "6.06e-3", "done", "done"], ["0.0386", "6.01e-3", "done", "done"], ["0.0384", "5.95e-3", "done", "done"], ["0.0383", "5.90e-3", "done", "done"], ["0.0381", "5.85e-3", "done", "done"], ["0.0379", "5.79e-3", "done", "done"], ["0.0378", "5.74e-3", "done", "done"], ["0.0376", "5.69e-3", "done", "done"], ["0.0374", "5.64e-3", "done", "done"], ["0.0372", "5.59e-3", "done", "done"], ["0.0371", "5.54e-3", "done", "done"], ["0.0369", "5.49e-3", "done", "done"], ["0.0367", "5.44e-3", "done", "done"], ["0.0366", "5.39e-3", "done", "done"], ["0.0364", "5.34e-3", "done", "done"], ["0.0362", "5.29e-3", "done", "done"], ["0.0361", "5.24e-3", "done", "done"], ["0.0359", "5.19e-3", "done", "done"], ["0.0357", "5.15e-3", "done", "done"], ["0.0356", "5.10e-3", "done", "done"], ["0.0354", "5.06e-3", "done", "done"], ["0.0353", "5.01e-3", "done", "done"], ["0.0351", "4.96e-3", "done", "done"], ["0.0349", "4.92e-3", "done", "done"], ["0.0348", "4.87e-3", "done", "done"], ["0.0346", "4.83e-3", "done", "done"], ["0.0345", "4.79e-3", "done", "done"], ["0.0343", "4.74e-3", "done", "done"], ["0.0342", "4.70e-3", "done", "done"], ["0.034", "4.66e-3", "done", "done"], ["0.0339", "4.62e-3", "done", "done"], ["0.0337", "4.57e-3", "done", "done"], ["0.0335", "4.53e-3", "done", "done"], ["0.0334", "4.49e-3", "done", "done"], ["0.0332", "4.45e-3", "done", "done"], ["0.0331", "4.41e-3", "done", "done"], ["0.0329", "4.37e-3", "done", "done"], ["0.0328", "4.33e-3", "done", "done"], ["0.0326", "4.29e-3", "done", "done"], ["0.0325", "4.25e-3", "done", "done"], ["0.0323", "4.22e-3", "done", "done"], ["0.0322", "4.18e-3", "done", "done"], ["0.0321", "4.14e-3", "done", "done"], ["0.0319", "4.10e-3", "done", "done"], ["0.0318", "4.07e-3", "done", "done"], ["0.0316", "4.03e-3", "done", "done"], ["0.0315", "3.99e-3", "done", "done"], ["0.0313", "3.96e-3", "done", "done"], ["0.0312", "3.92e-3", "done", "done"], ["0.0311", "3.89e-3", "done", "done"], ["0.0309", "3.85e-3", "done", "done"], ["0.0308", "3.82e-3", "done", "done"], ["0.0306", "3.78e-3", "done", "done"], ["0.0305", "3.75e-3", "done", "done"], ["0.0304", "3.71e-3", "done", "done"], ["0.0302", "3.68e-3", "done", "done"], ["0.0301", "3.65e-3", "done", "done"], ["0.0299", "3.61e-3", "done", "done"], ["0.0298", "3.58e-3", "done", "done"], ["0.0297", "3.55e-3", "done", "done"], ["0.0295", "3.52e-3", "done", "done"], ["0.0294", "3.48e-3", "done", "done"], ["0.0293", "3.45e-3", "done", "done"], ["0.0291", "3.42e-3", "done", "done"], ["0.029", "3.39e-3", "done", "done"], ["0.0289", "3.36e-3", "done", "done"], ["0.0287", "3.33e-3", "done", "done"], ["0.0286", "3.30e-3", "done", "done"], ["0.0285", "3.27e-3", "done", "done"], ["0.0284", "3.24e-3", "done", "done"], ["0.0282", "3.21e-3", "done", "done"], ["0.0281", "3.18e-3", "done", "done"], ["0.028", "3.15e-3", "done", "done"], ["0.0278", "3.12e-3", "done", "done"], ["0.0277", "3.10e-3", "done", "done"], ["0.0276", "3.07e-3", "done", "done"], ["0.0275", "3.04e-3", "done", "done"], ["0.0273", "3.01e-3", "done", "done"], ["0.0272", "2.99e-3", "done", "done"], ["0.0271", "2.96e-3", "done", "done"], ["0.027", "2.93e-3", "done", "done"], ["0.0269", "2.91e-3", "done", "done"], ["0.0267", "2.88e-3", "done", "done"], ["0.0266", "2.85e-3", "done", "done"], ["0.0265", "2.83e-3", "done", "done"], ["0.0264", "2.80e-3", "done", "done"], ["0.0263", "2.78e-3", "done", "done"], ["0.0261", "2.75e-3", "done", "done"], ["0.026", "2.73e-3", "done", "done"], ["0.0259", "2.70e-3", "done", "done"], ["0.0258", "2.68e-3", "done", "done"], ["0.0257", "2.65e-3", "done", "done"], ["0.0255", "2.63e-3", "done", "done"], ["0.0254", "2.61e-3", "done", "done"], ["0.0253", "2.58e-3", "done", "done"], ["0.0252", "2.56e-3", "done", "done"], ["0.0251", "2.54e-3", "done", "done"], ["0.025", "2.51e-3", "done", "done"], ["0.0249", "2.49e-3", "done", "done"], ["0.0247", "2.47e-3", "done", "done"], ["0.0246", "2.45e-3", "done", "done"], ["0.0245", "2.42e-3", "done", "done"], ["0.0244", "2.40e-3", "done", "done"], ["0.0243", "2.38e-3", "done", "done"], ["0.0242", "2.36e-3", "done", "done"], ["0.0241", "2.34e-3", "done", "done"], ["0.024", "2.32e-3", "done", "done"], ["0.0239", "2.30e-3", "done", "done"], ["0.0238", "2.27e-3", "done", "done"], ["0.0236", "2.25e-3", "done", "done"], ["0.0235", "2.23e-3", "done", "done"], ["0.0234", "2.21e-3", "done", "done"], ["0.0233", "2.19e-3", "done", "done"], ["0.0232", "2.17e-3", "done", "done"], ["0.0231", "2.15e-3", "done", "done"], ["0.023", "2.13e-3", "done", "done"], ["0.0229", "2.12e-3", "done", "done"], ["0.0228", "2.10e-3", "done", "done"], ["0.0227", "2.08e-3", "done", "done"], ["0.0226", "2.06e-3", "done", "done"], ["0.0225", "2.04e-3", "done", "done"], ["0.0224", "2.02e-3", "done", "done"], ["0.0223", "2.00e-3", "done", "done"], ["0.0222", "1.98e-3", "done", "done"], ["0.0221", "1.97e-3", "done", "done"], ["0.022", "1.95e-3", "done", "done"], ["0.0219", "1.93e-3", "done", "done"], ["0.0218", "1.91e-3", "done", "done"], ["0.0217", "1.90e-3", "done", "done"], ["0.0216", "1.88e-3", "done", "done"], ["0.0215", "1.86e-3", "done", "done"], ["0.0214", "1.85e-3", "done", "done"], ["0.0213", "1.83e-3", "done", "done"], ["0.0212", "1.81e-3", "done", "done"], ["0.0211", "1.80e-3", "done", "done"], ["0.021", "1.78e-3", "done", "done"], ["0.0209", "1.76e-3", "done", "done"], ["0.0208", "1.75e-3", "done", "done"], ["0.0207", "1.73e-3", "done", "done"], ["0.0206", "1.72e-3", "done", "done"], ["0.0205", "1.70e-3", "done", "done"], ["0.0205", "1.69e-3", "done", "done"], ["0.0204", "1.67e-3", "done", "done"], ["0.0203", "1.66e-3", "done", "done"], ["0.0202", "1.64e-3", "done", "done"], ["0.0201", "1.63e-3", "done", "done"], ["0.02", "1.61e-3", "done", "done"], ["0.0199", "1.60e-3", "done", "done"], ["0.0198", "1.58e-3", "done", "done"], ["0.0197", "1.57e-3", "done", "done"], ["0.0196", "1.55e-3", "done", "done"], ["0.0195", "1.54e-3", "done", "done"], ["0.0195", "1.53e-3", "done", "done"], ["0.0194", "1.51e-3", "done", "done"], ["0.0193", "1.50e-3", "done", "done"], ["0.0192", "1.48e-3", "done", "done"], ["0.0191", "1.47e-3", "done", "done"], ["0.019", "1.46e-3", "done", "done"], ["0.0189", "1.44e-3", "done", "done"], ["0.0188", "1.43e-3", "done", "done"], ["0.0188", "1.42e-3", "done", "done"], ["0.0187", "1.41e-3", "done", "done"], ["0.0186", "1.39e-3", "done", "done"], ["0.0185", "1.38e-3", "done", "done"], ["0.0184", "1.37e-3", "done", "done"], ["0.0183", "1.36e-3", "done", "done"], ["0.0183", "1.34e-3", "done", "done"], ["0.0182", "1.33e-3", "done", "done"], ["0.0181", "1.32e-3", "done", "done"], ["0.018", "1.31e-3", "done", "done"], ["0.0179", "1.30e-3", "done", "done"], ["0.0178", "1.28e-3", "done", "done"], ["0.0178", "1.27e-3", "done", "done"], ["0.0177", "1.26e-3", "done", "done"], ["0.0176", "1.25e-3", "done", "done"], ["0.0175", "1.24e-3", "done", "done"], ["0.0174", "1.23e-3", "done", "done"], ["0.0174", "1.22e-3", "done", "done"], ["0.0173", "1.20e-3", "done", "done"], ["0.0172", "1.19e-3", "done", "done"], ["0.0171", "1.18e-3", "done", "done"], ["0.0171", "1.17e-3", "done", "done"], ["0.017", "1.16e-3", "done", "done"], ["0.0169", "1.15e-3", "done", "done"], ["0.0168", "1.14e-3", "done", "done"], ["0.0167", "1.13e-3", "done", "done"], ["0.0167", "1.12e-3", "done", "done"], ["0.0166", "1.11e-3", "done", "done"], ["0.0165", "1.10e-3", "done", "done"], ["0.0164", "1.09e-3", "done", "done"], ["0.0164", "1.08e-3", "done", "done"], ["0.0163", "1.07e-3", "done", "done"], ["0.0162", "1.06e-3", "done", "done"], ["0.0162", "1.05e-3", "done", "done"], ["0.0161", "1.04e-3", "done", "done"], ["0.016", "1.03e-3", "done", "done"], ["0.0159", "1.02e-3", "done", "done"], ["0.0159", "1.01e-3", "done", "done"], ["0.0158", "1.00e-3", "done", "done"], ["0.0157", "9.96e-4", "done", "done"], ["0.0156", "9.87e-4", "done", "done"], ["0.0156", "9.78e-4", "done", "done"], ["0.0155", "9.69e-4", "done", "done"], ["0.0154", "9.60e-4", "done", "done"], ["0.0154", "9.52e-4", "done", "done"], ["0.0153", "9.43e-4", "done", "done"], ["0.0152", "9.34e-4", "done", "done"], ["0.0152", "9.26e-4", "done", "done"], ["0.0151", "9.18e-4", "done", "done"], ["0.015", "9.09e-4", "done", "done"], ["0.015", "9.01e-4", "done", "done"], ["0.0149", "8.93e-4", "done", "done"], ["0.0148", "8.85e-4", "done", "done"], ["0.0148", "8.77e-4", "done", "done"], ["0.0147", "8.69e-4", "done", "done"], ["0.0146", "8.61e-4", "done", "done"], ["0.0146", "8.53e-4", "done", "done"], ["0.0145", "8.46e-4", "done", "done"], ["0.0144", "8.38e-4", "done", "done"], ["0.0144", "8.30e-4", "done", "done"], ["0.0143", "8.23e-4", "done", "done"], ["0.0142", "8.15e-4", "done", "done"], ["0.0142", "8.08e-4", "done", "done"], ["0.0141", "8.01e-4", "done", "done"], ["0.014", "7.94e-4", "done", "done"], ["0.014", "7.86e-4", "done", "done"], ["0.0139", "7.79e-4", "done", "done"], ["0.0138", "7.72e-4", "done", "done"], ["0.0138", "7.65e-4", "done", "done"], ["0.0137", "7.58e-4", "done", "done"], ["0.0137", "7.52e-4", "done", "done"], ["0.0136", "7.45e-4", "done", "done"], ["0.0135", "7.38e-4", "done", "done"], ["0.0135", "7.31e-4", "done", "done"], ["0.0134", "7.25e-4", "done", "done"], ["0.0133", "7.18e-4", "done", "done"], ["0.0133", "7.12e-4", "done", "done"], ["0.0132", "7.05e-4", "done", "done"], ["0.0132", "6.99e-4", "done", "done"], ["0.0131", "6.93e-4", "done", "done"], ["0.013", "6.86e-4", "done", "done"], ["0.013", "6.80e-4", "done", "done"], ["0.0129", "6.74e-4", "done", "done"], ["0.0129", "6.68e-4", "done", "done"], ["0.0128", "6.62e-4", "done", "done"], ["0.0128", "6.56e-4", "done", "done"], ["0.0127", "6.50e-4", "done", "done"], ["0.0126", "6.44e-4", "done", "done"], ["0.0126", "6.38e-4", "done", "done"], ["0.0125", "6.32e-4", "done", "done"], ["0.0125", "6.27e-4", "done", "done"], ["0.0124", "6.21e-4", "done", "done"], ["0.0124", "6.15e-4", "done", "done"], ["0.0123", "6.10e-4", "done", "done"], ["0.0122", "6.04e-4", "done", "done"], ["0.0122", "5.99e-4", "done", "done"], ["0.0121", "5.94e-4", "done", "done"], ["0.0121", "5.88e-4", "done", "done"], ["0.012", "5.83e-4", "done", "done"], ["0.012", "5.78e-4", "done", "done"], ["0.0119", "5.72e-4", "done", "done"], ["0.0119", "5.67e-4", "done", "done"], ["0.0118", "5.62e-4", "done", "done"], ["0.0118", "5.57e-4", "done", "done"], ["0.0117", "5.52e-4", "done", "done"], ["0.0117", "5.47e-4", "done", "done"], ["0.0116", "5.42e-4", "done", "done"], ["0.0115", "5.37e-4", "done", "done"], ["0.0115", "5.32e-4", "done", "done"], ["0.0114", "5.27e-4", "done", "done"], ["0.0114", "5.23e-4", "done", "done"], ["0.0113", "5.18e-4", "done", "done"], ["0.0113", "5.13e-4", "done", "done"], ["0.0112", "5.09e-4", "done", "done"], ["0.0112", "5.04e-4", "done", "done"], ["0.0111", "5.00e-4", "done", "done"], ["0.0111", "4.95e-4", "done", "done"], ["0.011", "4.91e-4", "done", "done"], ["0.011", "4.86e-4", "done", "done"], ["0.0109", "4.82e-4", "done", "done"], ["0.0109", "4.77e-4", "done", "done"], ["0.0108", "4.73e-4", "done", "done"], ["0.0108", "4.69e-4", "done", "done"], ["0.0107", "4.65e-4", "done", "done"]]; const ms = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599, 600];const width = 680, last = ms.length - 1;const xs = [64.0, 64.8, 65.7, 66.5, 67.3, 68.1, 69.0, 69.8, 70.6, 71.4, 72.3, 73.1, 73.9, 74.7, 75.6, 76.4, 77.2, 78.1, 78.9, 79.7, 80.5, 81.4, 82.2, 83.0, 83.8, 84.7, 85.5, 86.3, 87.1, 88.0, 88.8, 89.6, 90.5, 91.3, 92.1, 92.9, 93.8, 94.6, 95.4, 96.2, 97.1, 97.9, 98.7, 99.5, 100.4, 101.2, 102.0, 102.9, 103.7, 104.5, 105.3, 106.2, 107.0, 107.8, 108.6, 109.5, 110.3, 111.1, 111.9, 112.8, 113.6, 114.4, 115.3, 116.1, 116.9, 117.7, 118.6, 119.4, 120.2, 121.0, 121.9, 122.7, 123.5, 124.3, 125.2, 126.0, 126.8, 127.7, 128.5, 129.3, 130.1, 131.0, 131.8, 132.6, 133.4, 134.3, 135.1, 135.9, 136.7, 137.6, 138.4, 139.2, 140.1, 140.9, 141.7, 142.5, 143.4, 144.2, 145.0, 145.8, 146.7, 147.5, 148.3, 149.1, 150.0, 150.8, 151.6, 152.5, 153.3, 154.1, 154.9, 155.8, 156.6, 157.4, 158.2, 159.1, 159.9, 160.7, 161.5, 162.4, 163.2, 164.0, 164.9, 165.7, 166.5, 167.3, 168.2, 169.0, 169.8, 170.6, 171.5, 172.3, 173.1, 173.9, 174.8, 175.6, 176.4, 177.3, 178.1, 178.9, 179.7, 180.6, 181.4, 182.2, 183.0, 183.9, 184.7, 185.5, 186.3, 187.2, 188.0, 188.8, 189.7, 190.5, 191.3, 192.1, 193.0, 193.8, 194.6, 195.4, 196.3, 197.1, 197.9, 198.7, 199.6, 200.4, 201.2, 202.1, 202.9, 203.7, 204.5, 205.4, 206.2, 207.0, 207.8, 208.7, 209.5, 210.3, 211.1, 212.0, 212.8, 213.6, 214.5, 215.3, 216.1, 216.9, 217.8, 218.6, 219.4, 220.2, 221.1, 221.9, 222.7, 223.5, 224.4, 225.2, 226.0, 226.9, 227.7, 228.5, 229.3, 230.2, 231.0, 231.8, 232.6, 233.5, 234.3, 235.1, 235.9, 236.8, 237.6, 238.4, 239.3, 240.1, 240.9, 241.7, 242.6, 243.4, 244.2, 245.0, 245.9, 246.7, 247.5, 248.3, 249.2, 250.0, 250.8, 251.7, 252.5, 253.3, 254.1, 255.0, 255.8, 256.6, 257.4, 258.3, 259.1, 259.9, 260.7, 261.6, 262.4, 263.2, 264.1, 264.9, 265.7, 266.5, 267.4, 268.2, 269.0, 269.8, 270.7, 271.5, 272.3, 273.1, 274.0, 274.8, 275.6, 276.5, 277.3, 278.1, 278.9, 279.8, 280.6, 281.4, 282.2, 283.1, 283.9, 284.7, 285.5, 286.4, 287.2, 288.0, 288.9, 289.7, 290.5, 291.3, 292.2, 293.0, 293.8, 294.6, 295.5, 296.3, 297.1, 297.9, 298.8, 299.6, 300.4, 301.3, 302.1, 302.9, 303.7, 304.6, 305.4, 306.2, 307.0, 307.9, 308.7, 309.5, 310.3, 311.2, 312.0, 312.8, 313.7, 314.5, 315.3, 316.1, 317.0, 317.8, 318.6, 319.4, 320.3, 321.1, 321.9, 322.7, 323.6, 324.4, 325.2, 326.1, 326.9, 327.7, 328.5, 329.4, 330.2, 331.0, 331.8, 332.7, 333.5, 334.3, 335.1, 336.0, 336.8, 337.6, 338.5, 339.3, 340.1, 340.9, 341.8, 342.6, 343.4, 344.2, 345.1, 345.9, 346.7, 347.5, 348.4, 349.2, 350.0, 350.9, 351.7, 352.5, 353.3, 354.2, 355.0, 355.8, 356.6, 357.5, 358.3, 359.1, 359.9, 360.8, 361.6, 362.4, 363.3, 364.1, 364.9, 365.7, 366.6, 367.4, 368.2, 369.0, 369.9, 370.7, 371.5, 372.3, 373.2, 374.0, 374.8, 375.7, 376.5, 377.3, 378.1, 379.0, 379.8, 380.6, 381.4, 382.3, 383.1, 383.9, 384.7, 385.6, 386.4, 387.2, 388.1, 388.9, 389.7, 390.5, 391.4, 392.2, 393.0, 393.8, 394.7, 395.5, 396.3, 397.1, 398.0, 398.8, 399.6, 400.5, 401.3, 402.1, 402.9, 403.8, 404.6, 405.4, 406.2, 407.1, 407.9, 408.7, 409.5, 410.4, 411.2, 412.0, 412.9, 413.7, 414.5, 415.3, 416.2, 417.0, 417.8, 418.6, 419.5, 420.3, 421.1, 421.9, 422.8, 423.6, 424.4, 425.3, 426.1, 426.9, 427.7, 428.6, 429.4, 430.2, 431.0, 431.9, 432.7, 433.5, 434.3, 435.2, 436.0, 436.8, 437.7, 438.5, 439.3, 440.1, 441.0, 441.8, 442.6, 443.4, 444.3, 445.1, 445.9, 446.7, 447.6, 448.4, 449.2, 450.1, 450.9, 451.7, 452.5, 453.4, 454.2, 455.0, 455.8, 456.7, 457.5, 458.3, 459.1, 460.0, 460.8, 461.6, 462.5, 463.3, 464.1, 464.9, 465.8, 466.6, 467.4, 468.2, 469.1, 469.9, 470.7, 471.5, 472.4, 473.2, 474.0, 474.9, 475.7, 476.5, 477.3, 478.2, 479.0, 479.8, 480.6, 481.5, 482.3, 483.1, 483.9, 484.8, 485.6, 486.4, 487.3, 488.1, 488.9, 489.7, 490.6, 491.4, 492.2, 493.0, 493.9, 494.7, 495.5, 496.3, 497.2, 498.0, 498.8, 499.7, 500.5, 501.3, 502.1, 503.0, 503.8, 504.6, 505.4, 506.3, 507.1, 507.9, 508.7, 509.6, 510.4, 511.2, 512.1, 512.9, 513.7, 514.5, 515.4, 516.2, 517.0, 517.8, 518.7, 519.5, 520.3, 521.1, 522.0, 522.8, 523.6, 524.5, 525.3, 526.1, 526.9, 527.8, 528.6, 529.4, 530.2, 531.1, 531.9, 532.7, 533.5, 534.4, 535.2, 536.0, 536.9, 537.7, 538.5, 539.3, 540.2, 541.0, 541.8, 542.6, 543.5, 544.3, 545.1, 545.9, 546.8, 547.6, 548.4, 549.3, 550.1, 550.9, 551.7, 552.6, 553.4, 554.2, 555.0, 555.9, 556.7, 557.5, 558.3, 559.2, 560.0];let current = -1;const show = (k) => { k = Math.max(0, Math.min(last, k)); current = k; const x = xs[k]; line.setAttribute('x1', x); line.setAttribute('x2', x); line.setAttribute('visibility', 'visible'); tip.replaceChildren(); const head = document.createElement('div'); head.className = 'viz-tooltip-head'; head.textContent = 'k = ' + ms[k]; tip.append(head); names.forEach((name, i) => {  const row = document.createElement('div'); row.className = 'viz-tooltip-row';  const key = document.createElement('span'); key.className = 'viz-swatch'; key.style.background = colors[i];  const value = document.createElement('strong'); value.textContent = rows[k][i];  const label = document.createElement('span'); label.textContent = name;  row.append(key, value, label); tip.append(row); }); const box = svg.getBoundingClientRect(), frame = fig.getBoundingClientRect(); const xp = box.left - frame.left + x * box.width / width; tip.hidden = false; const room = frame.width - tip.offsetWidth - 8; tip.style.left = Math.max(0, Math.min(room, xp + 12)) + 'px'; tip.style.top = (box.top - frame.top + 8) + 'px';};const hide = () => { line.setAttribute('visibility', 'hidden'); tip.hidden = true; current = -1; };svg.addEventListener('pointermove', (event) => { const box = svg.getBoundingClientRect(); const x = (event.clientX - box.left) * width / box.width; let best = 0; xs.forEach((v, i) => { if (Math.abs(v - x) < Math.abs(xs[best] - x)) best = i; }); show(best);});svg.addEventListener('pointerleave', hide);svg.addEventListener('focus', () => show(current < 0 ? 0 : current));svg.addEventListener('blur', hide);svg.addEventListener('keydown', (event) => { if (event.key === 'ArrowRight') { show(current + 1); event.preventDefault(); } if (event.key === 'ArrowLeft') { show(current - 1); event.preventDefault(); } if (event.key === 'Escape') hide();});})();</script>
+</figure>
+
+How sensitive is SOR to $w$? For $n = 32$ ($w_{\text{opt}} = 1.826$):
+
+| $w$ | 0.5 | 1.0 (GS) | 1.5 | 1.7 | 1.8 | 1.83 | 1.9 | 1.95 | 1.99 | 2.05 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| steps | 5282 | 1784 | 605 | 314 | 174 | 113 | 181 | 359 | 1837 | diverges |
+
+The best value is sharp. Missing it by only $0.03$ ($w = 1.8$) costs $54\%$ more steps, and $w = 1.9$ costs $60\%$ more. At $w = 1.99$ SOR is as slow as Gauss–Seidel. Outside $(0, 2)$ it blows up, as Kahan's theorem says.
+
+### E. A nonsymmetric matrix
+
+For the nonsymmetric matrix
+
+$$
+A = \begin{bmatrix} 4 & 1 & 0 & 0 \\ -3 & 4 & 1 & 0 \\ 0 & -3 & 4 & 1 \\ 0 & 0 & -3 & 4 \end{bmatrix}, \qquad \mathbf{x} = (1, 2, -1, 1),
+$$
+
+I ran the CG formulas directly on $A$, and then on the normal equations $A^TA\mathbf{x} = A^T\mathbf{b}$.
+
+| step | 0 | 1 | 2 | 3 | 4 | 10 | 40 |
+|---|---|---|---|---|---|---|---|
+| CG on $A$, relative error | 1.00 | 0.583 | 0.624 | 0.808 | 1.02 | 2.29 | 9.18 |
+| CG on $A^TA$, relative error | 1.00 | 0.419 | 0.206 | 0.068 | $1.7 \times 10^{-16}$ | | |
+
+CG on $A$ gets better once and then drifts away. On the normal equations it finishes in $n = 4$ steps. The condition numbers are $\mathrm{cond}_2(A) = 2.144$ and $\mathrm{cond}_2(A^TA) = 4.598 = 2.144^2$, exactly the square. Here the square is harmless, but for a matrix with $\mathrm{cond} = 10^{8}$ it would be $10^{16}$.
+
+## Summary
+
+| Topic | Main point |
+|---|---|
+| Error vs. residual | $\mathbf{b} - A\mathbf{x}_0 = A(\mathbf{x} - \mathbf{x}_0)$. We only see the residual, so $A$ matters. |
+| Condition number | $\mathrm{cond}(A) = \|A\|\|A^{-1}\| \ge 1$. For symmetric $A$, $\mathrm{cond}_2 = \lvert\lambda\rvert_{\max}/\lvert\lambda\rvert_{\min}$. Small eigenvalues hurt. |
+| The bound | $\frac{1}{\mathrm{cond}} \le \frac{\text{rel. error}}{\text{rel. residual}} \le \mathrm{cond}$, from four norm inequalities. |
+| Hilbert matrix | Simple, symmetric, and extremely ill-conditioned ($10^{16}$ at $n = 12$). |
+| Preconditioner | $PA\mathbf{x} = P\mathbf{b}$ with $\mathrm{cond}(PA)$ near $1$. $P$ can be a process. |
+| Residual correction | $\mathbf{x}^{(m+1)} = \mathbf{x}^{(m)} + C\mathbf{r}^{(m)}$, error $(I - CA)^{m+1}\mathbf{e}^{(0)}$, converges iff $\rho(I - CA) < 1$. |
+| Jacobi | $B = D^{-1}(L + U)$. Fully parallel. Diagonal dominance is sufficient, not necessary. |
+| Gauss–Seidel | $B = (D - L)^{-1}U$. Uses new values at once. A bit faster, hard to parallelize. |
+| SOR | Weighted Gauss–Seidel. Needs $0 < w < 2$. A good $w$ is a big win, but the best $w$ is sharp. |
+| CG | For SPD matrices. Conjugate directions, at most $n$ steps in exact arithmetic. |
+| Nonsymmetric | Normal equations square the condition number. GMRES checks all old directions (restart it). BiCG uses $A$ and $A^T$. |
+
+The main thing I take from this week: an iterative solver only sees the residual. The condition number tells us how far the residual can lie, and the spectrum tells us how fast the solver can go. So most of the work is not in the solver itself, but in getting a good matrix: with a good preconditioner, or with the right method for its structure.
+
+The full script, with all the numbers and the chart, is in [this site's repository](https://github.com/doubleyands/doubleyands.github.io/tree/main/scripts/posts/numerical-analysis/week-8).
