@@ -540,6 +540,24 @@ def pinn_wave():
     return svg(*parts)
 
 
+def pinn_fisher_kpp():
+    """PINN Problem 8: Fisher-KPP, a front u = (1 + exp(x / sqrt 6 - 5 t / 6))^-2 that moves into u = 0. The front at
+    t = 0 (black), t = 2.5 (gray) and t = 5 (blue), a gray arrow for the motion, and the two end values (dots)."""
+    P = mapper(-10, 20, -0.12, 1.25, 150, 1050, 70, 560)
+    u = lambda x, t: (1 + math.exp(x / math.sqrt(6) - 5 * t / 6)) ** -2
+    curve = lambda t: [P(-10 + 30 * k / 400, u(-10 + 30 * k / 400, t)) for k in range(401)]
+    parts = [line(*P(-10, 0), *P(20, 0), GRAY, 4)]
+    parts.append(polyline(curve(2.5), GRAY, 5))
+    parts.append(polyline(curve(5), BLUE, 6))
+    parts.append(polyline(curve(0), INK, 6))
+    x0, x1, y = 1.0, 9.0, 1.13  # arrow above the fronts
+    parts.append(line(*P(x0, y), *P(x1, y), GRAY, 5))
+    parts.append(polyline([P(x1 - 1.0, y + 0.06), P(x1, y), P(x1 - 1.0, y - 0.06)], GRAY, 5))
+    parts.append(dot(*P(-10, 1), r=14))
+    parts.append(dot(*P(20, 0), r=14))
+    return svg(*parts)
+
+
 def rk4_region():
     """Week 6: the region of absolute stability of RK4, |P(z)| <= 1 with P(z) = 1 + z + z^2/2 + z^3/6 + z^4/24 (blue),
     and the smaller forward Euler disk (gray dashes) in the complex z plane."""
@@ -757,6 +775,7 @@ DRAWINGS = {
     "2026-11-16-pinn-05-heat": pinn_heat,
     "2026-11-18-pinn-06-advection": pinn_advection,
     "2026-11-20-pinn-07-wave": pinn_wave,
+    "2026-11-23-pinn-08-fisher-kpp": pinn_fisher_kpp,
     "2026-11-19-numerical-pde-lecture-14": cfl_triangle,
 }
 
