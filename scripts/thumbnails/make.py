@@ -698,6 +698,26 @@ def cfl_triangle():
     return svg(*parts)
 
 
+def limited_slopes():
+    """Lecture 15: piecewise linear reconstruction. One average per cell (gray dots at the centers),
+    a line through each average (black). Next to the jump and at the peak the minmod slope is zero,
+    so those cells stay flat (blue)."""
+    P = mapper(0, 10, 0, 1.15, 120, 1080, 80, 550)
+    Q = [0.12, 0.26, 0.45, 0.66, 0.85, 0.72, 0.72, 0.14, 0.14, 0.14]
+    mm = lambda a, b: 0.0 if a * b <= 0 else (a if abs(a) < abs(b) else b)
+    parts = [line(*P(0, 0), *P(10, 0), GRAY, 4)]
+    for i in range(11):
+        parts.append(line(*P(i, 0), *P(i, 1.05), FAINT, 4))
+    for i, q in enumerate(Q):
+        back = q - Q[i - 1] if i > 0 else 0.0
+        fwd = Q[i + 1] - q if i < len(Q) - 1 else 0.0
+        s = mm(back, fwd)
+        flat = s == 0.0 and 0 < i < 7
+        parts.append(line(*P(i + 0.06, q - 0.44 * s), *P(i + 0.94, q + 0.44 * s), BLUE if flat else INK, 7))
+        parts.append(dot(*P(i + 0.5, q), 10, GRAY))
+    return svg(*parts)
+
+
 def cg_vs_descent():
     """Week 8: level sets of a quadratic with a 2x2 SPD matrix (gray ellipses). Steepest descent zigzags
     toward the minimum (gray dashed); conjugate gradient gets there in two steps (blue)."""
@@ -777,6 +797,7 @@ DRAWINGS = {
     "2026-11-20-pinn-07-wave": pinn_wave,
     "2026-11-23-pinn-08-fisher-kpp": pinn_fisher_kpp,
     "2026-11-19-numerical-pde-lecture-14": cfl_triangle,
+    "2026-11-24-numerical-pde-lecture-15": limited_slopes,
 }
 
 
