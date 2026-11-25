@@ -558,6 +558,27 @@ def pinn_fisher_kpp():
     return svg(*parts)
 
 
+def pinn_poisson_2d():
+    """PINN Problem 9: 2D Poisson on the unit square, u = sin(pi x) sin(pi y) + 0.1 sin(4 pi x) sin(4 pi y). Level
+    curves of u (black and gray, wavy from the ripple) inside the square, and the four walls u = 0 in blue."""
+    P = mapper(0, 1, 0, 1, 360, 840, 75, 555)  # same scale on both axes
+    u = lambda x, y: math.sin(math.pi * x) * math.sin(math.pi * y) + 0.1 * math.sin(4 * math.pi * x) * math.sin(4 * math.pi * y)
+    parts = []
+    for c, color, width in [(0.15, GRAY, 5), (0.45, INK, 6), (0.8, GRAY, 5)]:
+        pts = []
+        for k in range(721):  # march out from the center along each ray to the first u = c
+            phi = 2 * math.pi * k / 720
+            d = (math.cos(phi), math.sin(phi))
+            rho = 0.0
+            while u(0.5 + (rho + 0.001) * d[0], 0.5 + (rho + 0.001) * d[1]) > c:
+                rho += 0.001
+            pts.append(P(0.5 + rho * d[0], 0.5 + rho * d[1]))
+        parts.append(polyline(pts, color, width))
+    corners = [P(0, 0), P(1, 0), P(1, 1), P(0, 1), P(0, 0)]
+    parts.append(polyline(corners, BLUE, 7))
+    return svg(*parts)
+
+
 def rk4_region():
     """Week 6: the region of absolute stability of RK4, |P(z)| <= 1 with P(z) = 1 + z + z^2/2 + z^3/6 + z^4/24 (blue),
     and the smaller forward Euler disk (gray dashes) in the complex z plane."""
@@ -796,6 +817,7 @@ DRAWINGS = {
     "2026-11-18-pinn-06-advection": pinn_advection,
     "2026-11-20-pinn-07-wave": pinn_wave,
     "2026-11-23-pinn-08-fisher-kpp": pinn_fisher_kpp,
+    "2026-11-25-pinn-09-poisson-2d": pinn_poisson_2d,
     "2026-11-19-numerical-pde-lecture-14": cfl_triangle,
     "2026-11-24-numerical-pde-lecture-15": limited_slopes,
 }
