@@ -786,6 +786,23 @@ def cg_vs_descent():
     return svg(*parts)
 
 
+def tvd_region():
+    """Lecture 16: the flux-limiter function phi(theta). Axes (gray), the TVD region
+    0 <= phi <= min(2 theta, 2) (light blue fill), the line phi = 1 of Lax-Wendroff (gray dashes,
+    it leaves the region near theta = 0), and the MC limiter (blue) inside the region,
+    through the point (1, 1)."""
+    P = mapper(-0.6, 4.0, -0.25, 2.5, 140, 1060, 80, 550)
+    parts = [line(*P(-0.6, 0), *P(4.0, 0), GRAY, 4), line(*P(0, -0.25), *P(0, 2.5), GRAY, 4)]
+    region = [P(0, 0), P(1, 2), P(4.0, 2), P(4.0, 0)]
+    d = "M" + " L".join(f"{x:.1f},{y:.1f}" for x, y in region) + " Z"
+    parts.append(f'<path d="{d}" fill="{BLUE}" fill-opacity="0.08" stroke="{GRAY}" stroke-width="4" stroke-linejoin="round"/>')
+    parts.append(polyline([P(-0.6, 1), P(4.0, 1)], GRAY, 5, dash="14 12"))
+    mc = [P(-0.6, 0), P(0, 0), P(1 / 3, 2 / 3), P(3, 2), P(4.0, 2)]
+    parts.append(polyline(mc, BLUE, 8))
+    parts.append(dot(*P(1, 1), 13, INK))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -820,6 +837,7 @@ DRAWINGS = {
     "2026-11-25-pinn-09-poisson-2d": pinn_poisson_2d,
     "2026-11-19-numerical-pde-lecture-14": cfl_triangle,
     "2026-11-24-numerical-pde-lecture-15": limited_slopes,
+    "2026-11-26-numerical-pde-lecture-16": tvd_region,
 }
 
 
