@@ -579,6 +579,31 @@ def pinn_poisson_2d():
     return svg(*parts)
 
 
+def pinn_l_shape():
+    """PINN Problem 10: Laplace on the L-shape [-1, 1]^2 without the bottom-right quarter, u = r^(2/3) sin(2 theta / 3).
+    Level curves of u (gray) bend sharply around the inner corner; the two edges that meet there (u = 0) in blue,
+    the other four edges in black."""
+    P = mapper(-1, 1, -1, 1, 360, 840, 75, 555)  # same scale on both axes
+    inside = lambda x, y: -1 <= x <= 1 and -1 <= y <= 1 and not (x > 0 and y < 0)
+    parts = []
+    for c in (0.25, 0.55, 0.85):
+        pts = []
+        for k in range(1, 1200):
+            t = 1.5 * math.pi * k / 1200
+            r = (c / math.sin(2 * t / 3)) ** 1.5
+            x, y = r * math.cos(t), r * math.sin(t)
+            if inside(x, y):
+                pts.append(P(x, y))
+            elif pts:
+                parts.append(polyline(pts, GRAY, 5))
+                pts = []
+        if pts:
+            parts.append(polyline(pts, GRAY, 5))
+    parts.append(polyline([P(1, 0), P(1, 1), P(-1, 1), P(-1, -1), P(0, -1)], INK, 6))
+    parts.append(polyline([P(0, -1), P(0, 0), P(1, 0)], BLUE, 7))
+    return svg(*parts)
+
+
 def rk4_region():
     """Week 6: the region of absolute stability of RK4, |P(z)| <= 1 with P(z) = 1 + z + z^2/2 + z^3/6 + z^4/24 (blue),
     and the smaller forward Euler disk (gray dashes) in the complex z plane."""
@@ -835,6 +860,7 @@ DRAWINGS = {
     "2026-11-20-pinn-07-wave": pinn_wave,
     "2026-11-23-pinn-08-fisher-kpp": pinn_fisher_kpp,
     "2026-11-25-pinn-09-poisson-2d": pinn_poisson_2d,
+    "2026-11-27-pinn-10-l-shape": pinn_l_shape,
     "2026-11-19-numerical-pde-lecture-14": cfl_triangle,
     "2026-11-24-numerical-pde-lecture-15": limited_slopes,
     "2026-11-26-numerical-pde-lecture-16": tvd_region,
