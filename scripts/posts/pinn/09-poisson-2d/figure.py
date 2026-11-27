@@ -248,18 +248,6 @@ ARIA_WALL = (
     "4.0e-5.")
 
 
-def log_ticks(lo, hi):
-    return [(10.0 ** k, decade(k)) for k in range(round(math.log10(lo)), round(math.log10(hi)) + 1)]
-
-
-ARIA_TRAINING = "TBD"
-ARIA_ERROR = "TBD"
-ARIA_WALL = "TBD"
-
-
-def log_ticks(lo, hi):
-    return [(10.0 ** k, decade(k)) for k in range(round(math.log10(lo)), round(math.log10(hi)) + 1)]
-
 
 # --- where the error is, seed 0 ---
 for m in METHODS:
