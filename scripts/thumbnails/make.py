@@ -828,6 +828,27 @@ def tvd_region():
     return svg(*parts)
 
 
+def line_search():
+    """Week 9: f along one search direction, g(alpha) = f(xi + alpha d), is an upward parabola.
+    The level f(xi) (gray dashes), the descent part 0 < alpha < 2 alpha* below it (blue),
+    the start (black dot), and the best step alpha* at the bottom (blue dot)."""
+    P = mapper(-0.35, 2.35, -1.25, 0.62, 140, 1060, 70, 560)
+    g = lambda a: a * a - 2 * a  # g(0) = 0, minimum -1 at a = 1, back to 0 at a = 2
+    parts = [line(*P(-0.35, -1.25), *P(2.35, -1.25), FAINT, 4)]
+    parts.append(polyline([P(-0.35, 0), P(2.35, 0)], GRAY, 5, "14 12"))
+    parts.append(line(*P(1, -1.25), *P(1, -1), FAINT, 4))
+    left = [P(-0.25 + 0.25 * k / 30, g(-0.25 + 0.25 * k / 30)) for k in range(31)]
+    mid = [P(2 * k / 120, g(2 * k / 120)) for k in range(121)]
+    right = [P(2 + 0.25 * k / 30, g(2 + 0.25 * k / 30)) for k in range(31)]
+    parts.append(polyline(left, INK, 7))
+    parts.append(polyline(right, INK, 7))
+    parts.append(polyline(mid, BLUE, 8))
+    parts.append(dot(*P(2, 0), 10, GRAY))
+    parts.append(dot(*P(0, 0), 13, INK))
+    parts.append(dot(*P(1, -1), 13, BLUE))
+    return svg(*parts)
+
+
 DRAWINGS = {
     "2026-10-03-numerical-analysis-week-1": rootfinding,
     "2026-10-06-numerical-pde-lecture-1": outward_normals,
@@ -864,6 +885,7 @@ DRAWINGS = {
     "2026-11-19-numerical-pde-lecture-14": cfl_triangle,
     "2026-11-24-numerical-pde-lecture-15": limited_slopes,
     "2026-11-26-numerical-pde-lecture-16": tvd_region,
+    "2026-11-28-numerical-analysis-week-9": line_search,
 }
 
 
